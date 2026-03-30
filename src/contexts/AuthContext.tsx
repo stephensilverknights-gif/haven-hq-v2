@@ -56,10 +56,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         setSession(session)
         if (session?.user) {
-          await fetchProfile(session.user.id)
+          // Do NOT await fetchProfile here — calling supabase.from() inside
+          // onAuthStateChange deadlocks: the auth client fires this callback
+          // while holding the init lock, and fetchProfile → getSession() →
+          // await initializePromise creates a circular wait that never resolves.
+          // Deferring via setTimeout lets initializePromise settle first.
+          setTimeout(() => { fetchProfile(session.user.id) }, 0)
         } else {
           setProfile(null)
         }
