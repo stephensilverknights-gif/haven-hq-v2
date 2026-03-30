@@ -136,7 +136,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
 
       {/* Mobile menu sheet */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="w-[280px] p-0" showCloseButton={false}>
+        <SheetContent side="left" className="w-[280px] p-0 bg-card-bg border-border" showCloseButton={false}>
           <SheetHeader className="px-5 pt-5 pb-4 border-b border-border">
             <SheetTitle
               className="text-[22px] font-bold tracking-tight text-left"
