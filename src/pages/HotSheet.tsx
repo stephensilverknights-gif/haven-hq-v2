@@ -134,7 +134,7 @@ function IssueGroup({
 }
 
 export default function HotSheet() {
-  const { issues, counts, isLoading } = useIssues()
+  const { issues, counts, isLoading, error } = useIssues()
   const [showNewIssue, setShowNewIssue] = useState(false)
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null)
 
@@ -164,6 +164,16 @@ export default function HotSheet() {
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
                 <p className="text-text-secondary text-sm">Loading…</p>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <p className="text-text-secondary text-sm">Couldn't load issues.</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="text-haven-indigo text-sm hover:underline"
+                >
+                  Retry
+                </button>
               </div>
             ) : issues.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">

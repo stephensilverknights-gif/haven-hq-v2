@@ -53,6 +53,8 @@ export function useIssues() {
   const issuesQuery = useQuery({
     queryKey: ['issues'],
     queryFn: fetchIssues,
+    retry: 3,
+    retryDelay: 800,
   })
 
   // Stable query key — fires in parallel with issues, not after them
