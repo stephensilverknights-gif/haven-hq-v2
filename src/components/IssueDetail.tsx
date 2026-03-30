@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, ClipboardList, ArrowLeft, ArrowRight, Check, ListChecks, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import PriorityBadge from '@/components/PriorityBadge'
 import PropertyBadge from '@/components/PropertyBadge'
@@ -409,7 +408,7 @@ function IssueDetailContent({
         </button>
       </div>
 
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         <div className="px-4 sm:px-5 py-4 space-y-5">
           {/* Title + Type */}
           <div>
@@ -562,7 +561,7 @@ function IssueDetailContent({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   )
 }
