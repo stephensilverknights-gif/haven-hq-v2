@@ -13,12 +13,12 @@ const config: Record<Priority, {
     classes: 'bg-fire-bg text-fire-text border-fire-border',
   },
   urgent: {
-    label: 'Urgent',
+    label: 'Important',
     icon: Clock,
     classes: 'bg-urgent-bg text-urgent-text border-urgent-border',
   },
   watch: {
-    label: 'Watch',
+    label: 'Upcoming',
     icon: Eye,
     classes: 'bg-watch-bg text-watch-text border-watch-border',
   },

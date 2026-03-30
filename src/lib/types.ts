@@ -81,8 +81,8 @@ export const ISSUE_TYPE_LABELS: Record<IssueType, string> = {
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
   on_fire: 'On Fire',
-  urgent: 'Urgent',
-  watch: 'Watch',
+  urgent: 'Important',
+  watch: 'Upcoming',
 }
 
 export const STATUS_LABELS: Record<IssueStatus, string> = {

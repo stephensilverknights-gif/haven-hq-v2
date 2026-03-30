@@ -46,13 +46,13 @@ function SummaryStrip({ counts }: { counts: { on_fire: number; urgent: number; w
       <div className="flex items-center gap-2">
         <Clock size={13} strokeWidth={1.5} className="text-urgent-text" />
         <span className="text-[13px] font-bold text-urgent-text">{counts.urgent}</span>
-        <span className="text-[12px] text-text-muted">Urgent</span>
+        <span className="text-[12px] text-text-muted">Important</span>
       </div>
       <span className="text-text-muted opacity-30">·</span>
       <div className="flex items-center gap-2">
         <Eye size={13} strokeWidth={1.5} className="text-watch-text" />
         <span className="text-[13px] font-bold text-watch-text">{counts.watch}</span>
-        <span className="text-[12px] text-text-muted">Watch</span>
+        <span className="text-[12px] text-text-muted">Upcoming</span>
       </div>
     </motion.div>
   )
@@ -66,8 +66,8 @@ const priorityGroups: {
   label: string
 }[] = [
   { priority: 'on_fire', icon: Flame, labelClass: 'text-fire-text',   dotColor: '#EF4444', label: 'On Fire' },
-  { priority: 'urgent',  icon: Clock, labelClass: 'text-urgent-text', dotColor: '#D97706', label: 'Urgent' },
-  { priority: 'watch',   icon: Eye,   labelClass: 'text-watch-text',  dotColor: '#059669', label: 'Watch' },
+  { priority: 'urgent',  icon: Clock, labelClass: 'text-urgent-text', dotColor: '#D97706', label: 'Important' },
+  { priority: 'watch',   icon: Eye,   labelClass: 'text-watch-text',  dotColor: '#059669', label: 'Upcoming' },
 ]
 
 function IssueGroup({
