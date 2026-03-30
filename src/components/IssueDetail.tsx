@@ -26,9 +26,11 @@ interface IssueDetailProps {
 
 function StatusStepper({
   currentStatus,
+  pendingStatus,
   onStatusChange,
 }: {
   currentStatus: IssueStatus
+  pendingStatus: IssueStatus | null
   onStatusChange: (status: IssueStatus) => void
 }) {
   const currentIdx = STATUS_STEPS.indexOf(currentStatus)
@@ -42,6 +44,7 @@ function StatusStepper({
         {STATUS_STEPS.map((step, idx) => {
           const isActive = idx === currentIdx
           const isPast = idx < currentIdx
+          const isPending = pendingStatus === step
           const isClickable = idx !== currentIdx
           const isLast = idx === STATUS_STEPS.length - 1
           return (
@@ -51,14 +54,17 @@ function StatusStepper({
                 disabled={!isClickable}
                 className={cn(
                   'relative text-[11px] font-medium px-2.5 py-1.5 rounded-[8px] whitespace-nowrap transition-all duration-150 flex items-center gap-1',
-                  isActive
-                    ? 'bg-haven-indigo text-white shadow-sm'
-                    : isPast
-                      ? 'bg-haven-indigo/10 text-haven-indigo hover:bg-haven-indigo/15'
-                      : 'bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+                  isPending
+                    ? 'ring-2 ring-haven-indigo bg-haven-indigo/10 text-haven-indigo font-semibold'
+                    : isActive
+                      ? 'bg-haven-indigo text-white shadow-sm'
+                      : isPast
+                        ? 'bg-haven-indigo/10 text-haven-indigo hover:bg-haven-indigo/15'
+                        : 'bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary'
                 )}
               >
-                {isPast && <Check size={10} strokeWidth={2.5} className="shrink-0" />}
+                {isPast && !isPending && <Check size={10} strokeWidth={2.5} className="shrink-0" />}
+                {isPending && <ArrowRight size={10} strokeWidth={2.5} className="shrink-0" />}
                 {STATUS_LABELS[step]}
               </button>
               {!isLast && (
@@ -408,7 +414,7 @@ function IssueDetailContent({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-contain">
+      <div className="flex-1 overflow-y-auto overscroll-contain themed-scroll">
         <div className="px-4 sm:px-5 py-4 space-y-5">
           {/* Title + Type */}
           <div>
@@ -432,6 +438,7 @@ function IssueDetailContent({
             </label>
             <StatusStepper
               currentStatus={issue.status}
+              pendingStatus={pendingStatus}
               onStatusChange={handleStatusChange}
             />
 

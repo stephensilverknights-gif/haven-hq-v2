@@ -39,8 +39,31 @@ export function useToggleChecklistItem() {
         .eq('id', vars.itemId)
       if (error) throw error
     },
+    onMutate: async (vars) => {
+      // Cancel in-flight refetches so they don't overwrite the optimistic update
+      await queryClient.cancelQueries({ queryKey: ['checklist', vars.issueId] })
+      const previous = queryClient.getQueryData<ChecklistItem[]>(['checklist', vars.issueId])
+
+      // Instantly reflect the toggle — progress bar moves immediately
+      queryClient.setQueryData<ChecklistItem[]>(['checklist', vars.issueId], (old) =>
+        old?.map((item) =>
+          item.id === vars.itemId
+            ? { ...item, completed: vars.completed, completed_by: vars.completed ? vars.userId : null }
+            : item
+        ) ?? []
+      )
+      return { previous }
+    },
+    onError: (_err, vars, context) => {
+      // Roll back on failure
+      if (context?.previous) {
+        queryClient.setQueryData(['checklist', vars.issueId], context.previous)
+      }
+    },
     onSuccess: (_data, vars) => {
+      // Re-sync from server and refresh the progress badges on issue rows
       queryClient.invalidateQueries({ queryKey: ['checklist', vars.issueId] })
+      queryClient.invalidateQueries({ queryKey: ['checklistProgress'] })
     },
   })
 }
