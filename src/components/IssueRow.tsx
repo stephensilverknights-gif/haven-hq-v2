@@ -1,0 +1,128 @@
+import { motion } from 'framer-motion'
+import { formatDistanceToNow } from 'date-fns'
+import { StickyNote } from 'lucide-react'
+import type { Issue, IssueStatus } from '@/lib/types'
+import { STATUS_LABELS } from '@/lib/types'
+import PriorityBadge from '@/components/PriorityBadge'
+import PropertyBadge from '@/components/PropertyBadge'
+import ElapsedTimer from '@/components/ElapsedTimer'
+
+const borderColors: Record<string, string> = {
+  on_fire: '#DC2626',
+  urgent:  '#D97706',
+  watch:   '#059669',
+}
+
+const statusDotColors: Record<IssueStatus, string> = {
+  open:              '#A1A1AA',
+  in_progress:       '#5B5BD6',
+  pending_response:  '#D97706',
+  vendor_scheduled:  '#0891B2',
+  resolved:          '#059669',
+}
+
+interface IssueRowProps {
+  issue: Issue
+  handoffNote?: string
+  checklistProgress?: { completed: number; total: number } | null
+  onClick: () => void
+}
+
+export default function IssueRow({
+  issue,
+  handoffNote,
+  checklistProgress,
+  onClick,
+}: IssueRowProps) {
+  const isOnFire = issue.priority === 'on_fire'
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ backgroundColor: 'rgba(0,0,0,0.012)' }}
+      whileTap={{ scale: 0.995 }}
+      onClick={onClick}
+      className="bg-card-bg rounded-[10px] border border-border cursor-pointer overflow-hidden shadow-sm"
+      style={{ borderLeftWidth: 3, borderLeftColor: borderColors[issue.priority] }}
+    >
+      <div className="px-3.5 py-3">
+        {/* Row 1: property + title + badges */}
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Property */}
+          {issue.property && (
+            <PropertyBadge
+              name={issue.property.name}
+              colorTag={issue.property.color_tag}
+              className="shrink-0"
+            />
+          )}
+          {/* Title */}
+          <span className="text-[14px] font-semibold text-text-primary truncate flex-1 min-w-0">
+            {issue.title}
+          </span>
+          {/* Priority badge — hidden if group header already shows priority */}
+          <div className="shrink-0 hidden sm:block">
+            <PriorityBadge priority={issue.priority} />
+          </div>
+        </div>
+
+        {/* Row 2: handoff note (if exists) */}
+        {handoffNote && (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <StickyNote size={11} strokeWidth={1.5} className="text-text-muted shrink-0" />
+            <p className="text-[12px] text-text-secondary truncate">{handoffNote}</p>
+          </div>
+        )}
+
+        {/* Row 3: status + checklist progress + time */}
+        <div className="flex items-center justify-between mt-2 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Status */}
+            <div className="flex items-center gap-1">
+              <span
+                className="w-[5px] h-[5px] rounded-full shrink-0"
+                style={{ backgroundColor: statusDotColors[issue.status] }}
+              />
+              <span className="text-[11px] text-text-muted font-medium whitespace-nowrap">
+                {STATUS_LABELS[issue.status]}
+              </span>
+            </div>
+
+            {/* Checklist progress */}
+            {checklistProgress && checklistProgress.total > 0 && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-zinc-300">·</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-16 h-[3px] bg-zinc-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-haven-indigo rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(checklistProgress.completed / checklistProgress.total) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-text-muted font-medium">
+                    {checklistProgress.completed}/{checklistProgress.total}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Time */}
+          <div className="shrink-0">
+            {isOnFire ? (
+              <ElapsedTimer startTime={issue.created_at} priority={issue.priority} />
+            ) : (
+              <span className="text-[11px] text-text-muted">
+                {formatDistanceToNow(new Date(issue.updated_at), { addSuffix: true })}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
