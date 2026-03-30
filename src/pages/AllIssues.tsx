@@ -45,139 +45,170 @@ export default function AllIssues() {
   const selectedIssue = allIssues.find((i) => i.id === selectedIssueId) ?? null
 
   return (
-    <div className="min-h-screen bg-page-bg">
+    <div className="h-screen flex flex-col bg-page-bg">
       <TopNav onNewIssue={() => setShowNewIssue(true)} />
 
-      <main className="max-w-6xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
-        <h2 className="text-xl font-semibold text-text-primary mb-4">All Issues</h2>
+      <div className="flex flex-1 min-h-0">
+        {/* Left: filtered list */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-6xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
+            <h2 className="text-xl font-semibold text-text-primary mb-4">All Issues</h2>
 
-        {/* Filters */}
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3 mb-6">
-          <Select value={filterProperty} onValueChange={setFilterProperty}>
-            <SelectTrigger className="w-full sm:w-[180px] rounded-[8px] text-sm min-h-[44px] sm:min-h-0">
-              <SelectValue placeholder="Property" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Properties</SelectItem>
-              {properties?.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {/* Filters */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3 mb-6">
+              <Select value={filterProperty} onValueChange={setFilterProperty}>
+                <SelectTrigger className="w-full sm:w-[180px] rounded-[8px] text-sm min-h-[44px] sm:min-h-0">
+                  <SelectValue placeholder="Property" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Properties</SelectItem>
+                  {properties?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-full sm:w-[160px] rounded-[8px] text-sm min-h-[44px] sm:min-h-0">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {(Object.entries(ISSUE_TYPE_LABELS) as [IssueType, string][]).map(
-                ([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                )
-              )}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterPriority} onValueChange={setFilterPriority}>
-            <SelectTrigger className="w-full sm:w-[140px] rounded-[8px] text-sm min-h-[44px] sm:min-h-0">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              {(Object.entries(PRIORITY_LABELS) as [Priority, string][]).map(
-                ([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                )
-              )}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-full sm:w-[170px] rounded-[8px] text-sm min-h-[44px] sm:min-h-0">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {(Object.entries(STATUS_LABELS) as [IssueStatus, string][]).map(
-                ([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                )
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Active issues */}
-        {isLoading ? (
-          <p className="text-text-secondary py-10 text-center">Loading...</p>
-        ) : activeIssues.length === 0 && resolvedIssues.length === 0 ? (
-          <p className="text-text-muted py-10 text-center">No issues match your filters.</p>
-        ) : (
-          <>
-            <motion.div
-              className="grid gap-3"
-              initial="hidden"
-              animate="visible"
-              variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
-            >
-              {activeIssues.map((issue) => (
-                <IssueCard
-                  key={issue.id}
-                  issue={issue}
-                  handoffNote={issue.slack_note ?? undefined}
-                  lastNote={lastNotes[issue.id]}
-                  onClick={() => setSelectedIssueId(issue.id)}
-                />
-              ))}
-            </motion.div>
-
-            {/* Resolved section */}
-            {resolvedIssues.length > 0 && (
-              <div className="mt-8">
-                <button
-                  onClick={() => setShowResolved(!showResolved)}
-                  className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors mb-3 min-h-[44px]"
-                >
-                  <ChevronDown
-                    size={16}
-                    strokeWidth={1.5}
-                    className={`transition-transform ${showResolved ? 'rotate-180' : ''}`}
-                  />
-                  Resolved ({resolvedIssues.length})
-                </button>
-
-                <AnimatePresence>
-                  {showResolved && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="grid gap-3 overflow-hidden"
-                    >
-                      {resolvedIssues.map((issue) => (
-                        <div key={issue.id} className="opacity-60">
-                          <IssueCard
-                            issue={issue}
-                            handoffNote={issue.slack_note ?? undefined}
-                            lastNote={lastNotes[issue.id]}
-                            onClick={() => setSelectedIssueId(issue.id)}
-                          />
-                        </div>
-                      ))}
-                    </motion.div>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-full sm:w-[160px] rounded-[8px] text-sm min-h-[44px] sm:min-h-0">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {(Object.entries(ISSUE_TYPE_LABELS) as [IssueType, string][]).map(
+                    ([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    )
                   )}
-                </AnimatePresence>
-              </div>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterPriority} onValueChange={setFilterPriority}>
+                <SelectTrigger className="w-full sm:w-[140px] rounded-[8px] text-sm min-h-[44px] sm:min-h-0">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priorities</SelectItem>
+                  {(Object.entries(PRIORITY_LABELS) as [Priority, string][]).map(
+                    ([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-full sm:w-[170px] rounded-[8px] text-sm min-h-[44px] sm:min-h-0">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {(Object.entries(STATUS_LABELS) as [IssueStatus, string][]).map(
+                    ([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Active issues */}
+            {isLoading ? (
+              <p className="text-text-secondary py-10 text-center">Loading...</p>
+            ) : activeIssues.length === 0 && resolvedIssues.length === 0 ? (
+              <p className="text-text-muted py-10 text-center">No issues match your filters.</p>
+            ) : (
+              <>
+                <motion.div
+                  className="grid gap-3"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
+                >
+                  {activeIssues.map((issue) => (
+                    <IssueCard
+                      key={issue.id}
+                      issue={issue}
+                      handoffNote={issue.slack_note ?? undefined}
+                      lastNote={lastNotes[issue.id]}
+                      onClick={() => setSelectedIssueId(issue.id)}
+                    />
+                  ))}
+                </motion.div>
+
+                {/* Resolved section */}
+                {resolvedIssues.length > 0 && (
+                  <div className="mt-8">
+                    <button
+                      onClick={() => setShowResolved(!showResolved)}
+                      className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors mb-3 min-h-[44px]"
+                    >
+                      <ChevronDown
+                        size={16}
+                        strokeWidth={1.5}
+                        className={`transition-transform ${showResolved ? 'rotate-180' : ''}`}
+                      />
+                      Resolved ({resolvedIssues.length})
+                    </button>
+
+                    <AnimatePresence>
+                      {showResolved && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="grid gap-3 overflow-hidden"
+                        >
+                          {resolvedIssues.map((issue) => (
+                            <div key={issue.id} className="opacity-60">
+                              <IssueCard
+                                issue={issue}
+                                handoffNote={issue.slack_note ?? undefined}
+                                lastNote={lastNotes[issue.id]}
+                                onClick={() => setSelectedIssueId(issue.id)}
+                              />
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
-      </main>
+          </div>
+        </main>
+
+        {/* Right: detail panel — desktop only */}
+        <AnimatePresence>
+          {selectedIssue && (
+            <motion.aside
+              key="detail-panel"
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 24 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="hidden sm:flex flex-col w-[480px] shrink-0 border-l border-border"
+            >
+              <IssueDetail
+                variant="panel"
+                issue={selectedIssue}
+                onClose={() => setSelectedIssueId(null)}
+              />
+            </motion.aside>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Mobile overlay */}
+      <IssueDetail
+        variant="overlay"
+        issue={selectedIssue}
+        onClose={() => setSelectedIssueId(null)}
+      />
 
       <NewIssueModal open={showNewIssue} onClose={() => setShowNewIssue(false)} />
-      <IssueDetail issue={selectedIssue} onClose={() => setSelectedIssueId(null)} />
     </div>
   )
 }

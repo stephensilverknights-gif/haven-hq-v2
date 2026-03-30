@@ -9,14 +9,20 @@ import UserAvatar from '@/components/UserAvatar'
 import ElapsedTimer from '@/components/ElapsedTimer'
 
 const borderColors: Record<string, string> = {
-  on_fire: '#DC2626',
+  on_fire: '#EF4444',
   urgent:  '#D97706',
   watch:   '#059669',
 }
 
+const borderGlow: Record<string, string> = {
+  on_fire: '0 0 12px rgba(239,68,68,0.25)',
+  urgent:  '0 0 12px rgba(217,119,6,0.2)',
+  watch:   '0 0 12px rgba(5,150,105,0.2)',
+}
+
 const statusDotColors: Record<IssueStatus, string> = {
-  open:              '#A1A1AA',
-  in_progress:       '#5B5BD6',
+  open:              '#464664',
+  in_progress:       '#7B7CF8',
   pending_response:  '#D97706',
   vendor_scheduled:  '#0891B2',
   resolved:          '#059669',
@@ -37,11 +43,11 @@ export default function IssueCard({ issue, handoffNote, lastNote, onClick }: Iss
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ scale: 1.005, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
+      whileHover={{ scale: 1.005, boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className="bg-card-bg rounded-[12px] border border-border cursor-pointer overflow-hidden shadow-sm min-h-[48px]"
-      style={{ borderLeftWidth: 4, borderLeftColor: borderColors[issue.priority] }}
+      style={{ borderLeftWidth: 4, borderLeftColor: borderColors[issue.priority], boxShadow: borderGlow[issue.priority] }}
     >
       <div className="p-4">
         {/* Top row: property + priority */}
@@ -66,7 +72,7 @@ export default function IssueCard({ issue, handoffNote, lastNote, onClick }: Iss
 
         {/* Handoff note — takes priority over last activity note */}
         {handoffNote ? (
-          <div className="flex items-start gap-1.5 mb-3 px-2.5 py-1.5 bg-zinc-50 border border-zinc-200/60 rounded-[6px]">
+          <div className="flex items-start gap-1.5 mb-3 px-2.5 py-1.5 bg-surface border border-border rounded-[6px]">
             <StickyNote size={11} strokeWidth={1.5} className="text-text-muted mt-[2px] shrink-0" />
             <p className="text-[12px] text-text-secondary leading-snug line-clamp-2 font-medium">
               {handoffNote}

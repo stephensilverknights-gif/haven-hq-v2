@@ -47,7 +47,7 @@ export default function Login() {
         <CardHeader className="text-center pb-2">
           <h1
             className="text-[28px] font-bold tracking-tight"
-            style={{ color: '#5B5BD6' }}
+            style={{ color: '#7B7CF8' }}
           >
             HavenHQ
           </h1>
@@ -101,7 +101,7 @@ export default function Login() {
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-[8px] px-3 py-2">
+              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-[8px] px-3 py-2">
                 {error}
               </p>
             )}
@@ -111,7 +111,7 @@ export default function Login() {
               disabled={submitting}
               className="w-full rounded-[8px] font-medium"
               style={{
-                backgroundColor: submitting ? '#4A4AC4' : '#5B5BD6',
+                backgroundColor: submitting ? '#4A4AC4' : '#7B7CF8',
               }}
             >
               {submitting
@@ -130,7 +130,7 @@ export default function Login() {
                   setError(null)
                 }}
                 className="font-medium hover:underline"
-                style={{ color: '#5B5BD6' }}
+                style={{ color: '#7B7CF8' }}
               >
                 {isSignUp ? 'Sign in' : 'Sign up'}
               </button>

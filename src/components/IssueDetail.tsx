@@ -22,6 +22,7 @@ import { useQueryClient } from '@tanstack/react-query'
 interface IssueDetailProps {
   issue: Issue | null
   onClose: () => void
+  variant?: 'overlay' | 'panel'
 }
 
 function StatusStepper({
@@ -52,7 +53,7 @@ function StatusStepper({
                   ? 'bg-haven-indigo text-white shadow-sm'
                   : isPast
                     ? 'bg-haven-indigo/10 text-haven-indigo hover:bg-haven-indigo/15'
-                    : 'bg-zinc-100 text-text-muted hover:bg-zinc-200 hover:text-text-secondary'
+                    : 'bg-surface text-text-muted hover:bg-surface-hover hover:text-text-secondary'
               )}
             >
               {isPast && (
@@ -129,7 +130,7 @@ function IssueChecklist({ issueId }: { issueId: string }) {
             transition={{ duration: 0.15 }}
             className="mb-3 overflow-hidden"
           >
-            <div className="bg-zinc-50 border border-zinc-200 rounded-[8px] p-2 space-y-1">
+            <div className="bg-surface border border-border rounded-[8px] p-2 space-y-1">
               {templates?.map((t) => (
                 <button
                   key={t.id}
@@ -137,7 +138,7 @@ function IssueChecklist({ issueId }: { issueId: string }) {
                     await applyTemplate.mutateAsync({ issueId, steps: t.steps })
                     setShowTemplatePicker(false)
                   }}
-                  className="w-full text-left px-2.5 py-2 rounded-[6px] hover:bg-white transition-colors group"
+                  className="w-full text-left px-2.5 py-2 rounded-[6px] hover:bg-surface-hover transition-colors group"
                 >
                   <p className="text-[13px] font-medium text-text-primary group-hover:text-haven-indigo transition-colors">
                     {t.name}
@@ -154,7 +155,7 @@ function IssueChecklist({ issueId }: { issueId: string }) {
       {hasItems ? (
         <div className="space-y-1">
           {/* Progress bar */}
-          <div className="h-1 bg-zinc-100 rounded-full mb-3 overflow-hidden">
+          <div className="h-1 bg-surface rounded-full mb-3 overflow-hidden">
             <motion.div
               className="h-full rounded-full bg-haven-indigo"
               initial={{ width: 0 }}
@@ -182,7 +183,7 @@ function IssueChecklist({ issueId }: { issueId: string }) {
                   'w-4 h-4 mt-[1px] shrink-0 rounded-[4px] border-2 transition-all flex items-center justify-center',
                   item.completed
                     ? 'bg-haven-indigo border-haven-indigo'
-                    : 'border-zinc-300 hover:border-haven-indigo/60'
+                    : 'border-border hover:border-haven-indigo/60'
                 )}
               >
                 {item.completed && <Check size={9} strokeWidth={3} className="text-white" />}
@@ -226,7 +227,15 @@ function IssueChecklist({ issueId }: { issueId: string }) {
   )
 }
 
-export default function IssueDetail({ issue, onClose }: IssueDetailProps) {
+function IssueDetailContent({
+  issue,
+  onClose,
+  variant,
+}: {
+  issue: Issue
+  onClose: () => void
+  variant: 'overlay' | 'panel'
+}) {
   const { user } = useAuth()
   const updateStatus = useUpdateIssueStatus()
   const queryClient = useQueryClient()
@@ -241,7 +250,7 @@ export default function IssueDetail({ issue, onClose }: IssueDetailProps) {
   }
 
   const confirmStatusChange = async () => {
-    if (!pendingStatus || !statusNote.trim() || !user || !issue) return
+    if (!pendingStatus || !statusNote.trim() || !user) return
 
     await updateStatus.mutateAsync({
       issueId: issue.id,
@@ -255,7 +264,7 @@ export default function IssueDetail({ issue, onClose }: IssueDetailProps) {
   }
 
   const handleSlackUpdate = async () => {
-    if (!issue || !slackNote.trim()) return
+    if (!slackNote.trim()) return
 
     await supabase
       .from('issues')
@@ -271,6 +280,204 @@ export default function IssueDetail({ issue, onClose }: IssueDetailProps) {
     setSlackEditing(false)
   }
 
+  const isPanel = variant === 'panel'
+
+  return (
+    <div className={cn('flex flex-col', isPanel ? 'h-full w-full bg-card-bg' : 'h-full w-full bg-card-bg')}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-border shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Back button — overlay mobile only */}
+          {!isPanel && (
+            <button
+              onClick={onClose}
+              className="sm:hidden flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 text-text-muted hover:text-text-secondary transition-colors"
+            >
+              <ArrowLeft size={20} strokeWidth={1.5} />
+            </button>
+          )}
+          {issue.property && (
+            <PropertyBadge
+              name={issue.property.name}
+              colorTag={issue.property.color_tag}
+            />
+          )}
+          <PriorityBadge priority={issue.priority} />
+        </div>
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="flex items-center justify-center min-w-[44px] min-h-[44px] text-text-muted hover:text-text-secondary transition-colors shrink-0 -mr-2"
+        >
+          <X size={20} strokeWidth={1.5} />
+        </button>
+      </div>
+
+      <ScrollArea className="flex-1">
+        <div className="px-4 sm:px-5 py-4 space-y-5">
+          {/* Title + Type */}
+          <div>
+            <h2 className="text-lg font-semibold text-text-primary mb-1">
+              {issue.title}
+            </h2>
+            <span className="text-xs text-text-muted">
+              {ISSUE_TYPE_LABELS[issue.type]}
+            </span>
+            {issue.description && (
+              <p className="text-sm text-text-secondary mt-2">
+                {issue.description}
+              </p>
+            )}
+          </div>
+
+          {/* Status Stepper */}
+          <div>
+            <label className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2 block">
+              Status
+            </label>
+            <StatusStepper
+              currentStatus={issue.status}
+              onStatusChange={handleStatusChange}
+            />
+
+            {/* Status change note */}
+            <AnimatePresence>
+              {pendingStatus && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-3 space-y-2"
+                >
+                  <p className="text-xs text-text-secondary">
+                    Moving to <strong>{STATUS_LABELS[pendingStatus]}</strong> — add a note:
+                  </p>
+                  <Textarea
+                    value={statusNote}
+                    onChange={(e) => setStatusNote(e.target.value)}
+                    placeholder="What's happening?"
+                    className="rounded-[8px] min-h-[60px] text-sm"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={confirmStatusChange}
+                      disabled={!statusNote.trim() || updateStatus.isPending}
+                      className="rounded-[8px] min-h-[44px] sm:min-h-0"
+                      style={{ backgroundColor: '#7B7CF8' }}
+                    >
+                      {updateStatus.isPending ? 'Saving...' : 'Confirm'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setPendingStatus(null)}
+                      className="rounded-[8px] min-h-[44px] sm:min-h-0"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <Separator />
+
+          {/* Checklist */}
+          <IssueChecklist issueId={issue.id} />
+
+          <Separator />
+
+          {/* Handoff Note */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <ClipboardList size={14} strokeWidth={1.5} className="text-text-muted" />
+              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
+                Handoff Note
+              </label>
+            </div>
+            {slackEditing ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={slackNote}
+                  onChange={(e) => setSlackNote(e.target.value)}
+                  placeholder="What does the next person need to know?"
+                  className="rounded-[8px] min-h-[60px] text-sm"
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleSlackUpdate}
+                    className="rounded-[8px] min-h-[44px] sm:min-h-0"
+                    style={{ backgroundColor: '#7B7CF8' }}
+                  >
+                    Update
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSlackEditing(false)}
+                    className="rounded-[8px] min-h-[44px] sm:min-h-0"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => {
+                  setSlackNote(issue.slack_note ?? '')
+                  setSlackEditing(true)
+                }}
+                className="text-sm text-text-secondary bg-surface border border-border rounded-[8px] px-3 py-2.5 cursor-pointer hover:bg-surface-hover transition-colors min-h-[44px]"
+              >
+                {issue.slack_note || (
+                  <span className="text-text-muted italic">
+                    Click to add a handoff note...
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Activity Log */}
+          <ActivityLog issueId={issue.id} />
+
+          <Separator />
+
+          {/* Cost Entries */}
+          <CostEntry issueId={issue.id} />
+
+          {/* Resolve Button */}
+          {issue.status !== 'resolved' && (
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                className="w-full rounded-[8px] text-watch-text border-watch-border hover:bg-watch-bg min-h-[44px]"
+                onClick={() => handleStatusChange('resolved')}
+              >
+                Resolve Issue
+              </Button>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
+  )
+}
+
+export default function IssueDetail({ issue, onClose, variant = 'overlay' }: IssueDetailProps) {
+  if (variant === 'panel') {
+    if (!issue) return null
+    return <IssueDetailContent issue={issue} onClose={onClose} variant="panel" />
+  }
+
+  // Overlay variant — mobile only (sm:hidden)
   return (
     <AnimatePresence>
       {issue && (
@@ -281,7 +488,7 @@ export default function IssueDetail({ issue, onClose }: IssueDetailProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/20 z-40"
+            className="fixed inset-0 bg-black/40 z-40 sm:hidden"
           />
 
           {/* Panel */}
@@ -290,189 +497,9 @@ export default function IssueDetail({ issue, onClose }: IssueDetailProps) {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed right-0 top-0 h-full w-full sm:w-[380px] bg-card-bg border-l border-border shadow-2xl z-50 flex flex-col"
+            className="fixed right-0 top-0 h-full w-full sm:hidden border-l border-border shadow-2xl z-50"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-border shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
-                {/* Back button — mobile only */}
-                <button
-                  onClick={onClose}
-                  className="sm:hidden flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 text-text-muted hover:text-text-secondary transition-colors"
-                >
-                  <ArrowLeft size={20} strokeWidth={1.5} />
-                </button>
-                {issue.property && (
-                  <PropertyBadge
-                    name={issue.property.name}
-                    colorTag={issue.property.color_tag}
-                  />
-                )}
-                <PriorityBadge priority={issue.priority} />
-              </div>
-              {/* Close button — desktop only */}
-              <button
-                onClick={onClose}
-                className="hidden sm:flex items-center justify-center min-w-[44px] min-h-[44px] text-text-muted hover:text-text-secondary transition-colors shrink-0 -mr-2"
-              >
-                <X size={20} strokeWidth={1.5} />
-              </button>
-            </div>
-
-            <ScrollArea className="flex-1">
-              <div className="px-4 sm:px-5 py-4 space-y-5">
-                {/* Title + Type */}
-                <div>
-                  <h2 className="text-lg font-semibold text-text-primary mb-1">
-                    {issue.title}
-                  </h2>
-                  <span className="text-xs text-text-muted">
-                    {ISSUE_TYPE_LABELS[issue.type]}
-                  </span>
-                  {issue.description && (
-                    <p className="text-sm text-text-secondary mt-2">
-                      {issue.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Status Stepper */}
-                <div>
-                  <label className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2 block">
-                    Status
-                  </label>
-                  <StatusStepper
-                    currentStatus={issue.status}
-                    onStatusChange={handleStatusChange}
-                  />
-
-                  {/* Status change note */}
-                  <AnimatePresence>
-                    {pendingStatus && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-3 space-y-2"
-                      >
-                        <p className="text-xs text-text-secondary">
-                          Moving to <strong>{STATUS_LABELS[pendingStatus]}</strong> — add a note:
-                        </p>
-                        <Textarea
-                          value={statusNote}
-                          onChange={(e) => setStatusNote(e.target.value)}
-                          placeholder="What's happening?"
-                          className="rounded-[8px] min-h-[60px] text-sm"
-                          autoFocus
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={confirmStatusChange}
-                            disabled={!statusNote.trim() || updateStatus.isPending}
-                            className="rounded-[8px] min-h-[44px] sm:min-h-0"
-                            style={{ backgroundColor: '#5B5BD6' }}
-                          >
-                            {updateStatus.isPending ? 'Saving...' : 'Confirm'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setPendingStatus(null)}
-                            className="rounded-[8px] min-h-[44px] sm:min-h-0"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <Separator />
-
-                {/* Checklist */}
-                <IssueChecklist issueId={issue.id} />
-
-                <Separator />
-
-                {/* Handoff Note */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <ClipboardList size={14} strokeWidth={1.5} className="text-text-muted" />
-                    <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                      Handoff Note
-                    </label>
-                  </div>
-                  {slackEditing ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={slackNote}
-                        onChange={(e) => setSlackNote(e.target.value)}
-                        placeholder="What does the next person need to know?"
-                        className="rounded-[8px] min-h-[60px] text-sm"
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={handleSlackUpdate}
-                          className="rounded-[8px] min-h-[44px] sm:min-h-0"
-                          style={{ backgroundColor: '#5B5BD6' }}
-                        >
-                          Update
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSlackEditing(false)}
-                          className="rounded-[8px] min-h-[44px] sm:min-h-0"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => {
-                        setSlackNote(issue.slack_note ?? '')
-                        setSlackEditing(true)
-                      }}
-                      className="text-sm text-text-secondary bg-zinc-50 border border-zinc-200/60 rounded-[8px] px-3 py-2.5 cursor-pointer hover:bg-zinc-100 transition-colors min-h-[44px]"
-                    >
-                      {issue.slack_note || (
-                        <span className="text-text-muted italic">
-                          Click to add a handoff note...
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                {/* Activity Log */}
-                <ActivityLog issueId={issue.id} />
-
-                <Separator />
-
-                {/* Cost Entries */}
-                <CostEntry issueId={issue.id} />
-
-                {/* Resolve Button */}
-                {issue.status !== 'resolved' && (
-                  <div className="pt-2">
-                    <Button
-                      variant="outline"
-                      className="w-full rounded-[8px] text-green-700 border-green-300 hover:bg-green-50 min-h-[44px]"
-                      onClick={() => handleStatusChange('resolved')}
-                    >
-                      Resolve Issue
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
+            <IssueDetailContent issue={issue} onClose={onClose} variant="overlay" />
           </motion.div>
         </>
       )}

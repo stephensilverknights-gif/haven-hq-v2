@@ -45,7 +45,7 @@ function DesktopNavItem({
         'relative flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-[8px] transition-colors',
         isActive
           ? 'text-haven-indigo'
-          : 'text-text-secondary hover:text-text-primary hover:bg-zinc-100'
+          : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
       )}
     >
       <Icon size={16} strokeWidth={1.5} />
@@ -68,7 +68,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
   const navigate = useNavigate()
 
   return (
-    <header className="sticky top-0 z-30 bg-card-bg border-b border-border">
+    <header className="sticky top-0 z-30 bg-card-bg/80 backdrop-blur-md border-b border-border">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
         {/* Left: hamburger + logo + nav */}
         <div className="flex items-center gap-4 sm:gap-8">
@@ -82,7 +82,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
 
           <h1
             className="text-[22px] font-bold tracking-tight"
-            style={{ color: '#5B5BD6' }}
+            style={{ color: '#7B7CF8' }}
           >
             HavenHQ
           </h1>
@@ -99,7 +99,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
           <Button
             onClick={onNewIssue}
             className="rounded-[8px] font-medium gap-1.5 min-h-[44px]"
-            style={{ backgroundColor: '#5B5BD6' }}
+            style={{ backgroundColor: '#7B7CF8' }}
           >
             <Plus size={18} strokeWidth={1.5} />
             <span className="hidden sm:inline">New Issue</span>
@@ -140,7 +140,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
           <SheetHeader className="px-5 pt-5 pb-4 border-b border-border">
             <SheetTitle
               className="text-[22px] font-bold tracking-tight text-left"
-              style={{ color: '#5B5BD6' }}
+              style={{ color: '#7B7CF8' }}
             >
               HavenHQ
             </SheetTitle>
@@ -161,7 +161,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
                     'flex items-center gap-3 px-5 py-3.5 text-base font-medium min-h-[48px] transition-colors text-left',
                     isActive
                       ? 'bg-haven-indigo/10 text-haven-indigo'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-zinc-50'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                   )}
                 >
                   <Icon size={20} strokeWidth={1.5} />
@@ -174,7 +174,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
           <div className="border-t border-border">
             <button
               onClick={() => { setMobileMenuOpen(false); navigate('/settings') }}
-              className="flex items-center gap-3 px-5 py-3.5 text-base font-medium text-text-secondary hover:text-text-primary hover:bg-zinc-50 w-full min-h-[48px] transition-colors"
+              className="flex items-center gap-3 px-5 py-3.5 text-base font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover w-full min-h-[48px] transition-colors"
             >
               <Settings size={20} strokeWidth={1.5} />
               Settings
@@ -192,7 +192,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
                 setMobileMenuOpen(false)
                 signOut()
               }}
-              className="flex items-center gap-3 px-5 py-3.5 text-base font-medium text-text-secondary hover:text-text-primary hover:bg-zinc-50 w-full min-h-[48px] transition-colors"
+              className="flex items-center gap-3 px-5 py-3.5 text-base font-medium text-text-secondary hover:text-text-primary hover:bg-surface-hover w-full min-h-[48px] transition-colors"
             >
               <LogOut size={20} strokeWidth={1.5} />
               Sign Out

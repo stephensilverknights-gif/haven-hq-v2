@@ -55,7 +55,7 @@ export default function ActivityLog({ issueId }: ActivityLogProps) {
           disabled={!newNote.trim() || addNote.isPending}
           size="sm"
           className="rounded-[8px] shrink-0 self-end min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
-          style={{ backgroundColor: '#5B5BD6' }}
+          style={{ backgroundColor: '#7B7CF8' }}
         >
           <Send size={14} strokeWidth={1.5} />
         </Button>
@@ -93,7 +93,7 @@ export default function ActivityLog({ issueId }: ActivityLogProps) {
                 </div>
 
                 {entry.status_from && entry.status_to && (
-                  <div className="flex items-center gap-1.5 mb-1.5 p-1.5 bg-zinc-50 rounded-[6px] w-fit">
+                  <div className="flex items-center gap-1.5 mb-1.5 p-1.5 bg-surface rounded-[6px] w-fit">
                     <StatusBadge status={entry.status_from as IssueStatus} />
                     <ArrowRight size={11} className="text-text-muted shrink-0" />
                     <StatusBadge status={entry.status_to as IssueStatus} />

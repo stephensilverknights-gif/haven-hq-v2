@@ -8,14 +8,20 @@ import PropertyBadge from '@/components/PropertyBadge'
 import ElapsedTimer from '@/components/ElapsedTimer'
 
 const borderColors: Record<string, string> = {
-  on_fire: '#DC2626',
+  on_fire: '#EF4444',
   urgent:  '#D97706',
   watch:   '#059669',
 }
 
+const borderGlow: Record<string, string> = {
+  on_fire: '0 0 12px rgba(239,68,68,0.25)',
+  urgent:  '0 0 12px rgba(217,119,6,0.2)',
+  watch:   '0 0 12px rgba(5,150,105,0.2)',
+}
+
 const statusDotColors: Record<IssueStatus, string> = {
-  open:              '#A1A1AA',
-  in_progress:       '#5B5BD6',
+  open:              '#464664',
+  in_progress:       '#7B7CF8',
   pending_response:  '#D97706',
   vendor_scheduled:  '#0891B2',
   resolved:          '#059669',
@@ -25,6 +31,7 @@ interface IssueRowProps {
   issue: Issue
   handoffNote?: string
   checklistProgress?: { completed: number; total: number } | null
+  isSelected?: boolean
   onClick: () => void
 }
 
@@ -32,6 +39,7 @@ export default function IssueRow({
   issue,
   handoffNote,
   checklistProgress,
+  isSelected = false,
   onClick,
 }: IssueRowProps) {
   const isOnFire = issue.priority === 'on_fire'
@@ -41,11 +49,15 @@ export default function IssueRow({
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ backgroundColor: 'rgba(0,0,0,0.012)' }}
+      whileHover={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
       whileTap={{ scale: 0.995 }}
       onClick={onClick}
-      className="bg-card-bg rounded-[10px] border border-border cursor-pointer overflow-hidden shadow-sm"
-      style={{ borderLeftWidth: 3, borderLeftColor: borderColors[issue.priority] }}
+      className={`bg-card-bg rounded-[10px] border border-border cursor-pointer overflow-hidden shadow-sm${isSelected ? ' ring-1 ring-haven-indigo/50 bg-surface' : ''}`}
+      style={{
+        borderLeftWidth: 3,
+        borderLeftColor: borderColors[issue.priority],
+        boxShadow: borderGlow[issue.priority],
+      }}
     >
       <div className="px-3.5 py-3">
         {/* Row 1: property + title + badges */}
@@ -93,9 +105,9 @@ export default function IssueRow({
             {/* Checklist progress */}
             {checklistProgress && checklistProgress.total > 0 && (
               <div className="flex items-center gap-1.5">
-                <span className="text-zinc-300">·</span>
+                <span className="text-text-muted">·</span>
                 <div className="flex items-center gap-1">
-                  <div className="w-16 h-[3px] bg-zinc-100 rounded-full overflow-hidden">
+                  <div className="w-16 h-[3px] bg-surface rounded-full overflow-hidden">
                     <div
                       className="h-full bg-haven-indigo rounded-full transition-all duration-300"
                       style={{

@@ -97,7 +97,7 @@ export default function CostEntry({ issueId }: CostEntryProps) {
 
       {/* Add form */}
       {showForm && (
-        <div className="bg-zinc-50 rounded-[8px] p-3 mb-3 space-y-3">
+        <div className="bg-surface rounded-[8px] p-3 mb-3 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className="text-xs font-medium text-text-secondary mb-1 block">
@@ -174,7 +174,7 @@ export default function CostEntry({ issueId }: CostEntryProps) {
               onClick={handleSubmit}
               disabled={!amount || !description.trim() || addCost.isPending}
               className="rounded-[8px] min-h-[44px] sm:min-h-0"
-              style={{ backgroundColor: '#5B5BD6' }}
+              style={{ backgroundColor: '#7B7CF8' }}
             >
               {addCost.isPending ? 'Saving...' : 'Save'}
             </Button>
@@ -198,7 +198,7 @@ export default function CostEntry({ issueId }: CostEntryProps) {
           {entries.map((entry) => (
             <div
               key={entry.id}
-              className="flex items-start justify-between bg-zinc-50 rounded-[8px] px-3 py-2"
+              className="flex items-start justify-between bg-surface rounded-[8px] px-3 py-2"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-text-primary">

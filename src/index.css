@@ -3,59 +3,61 @@
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
 
-  --color-haven-indigo: #5B5BD6;
-  --color-haven-indigo-hover: #4A4AC4;
+  --color-haven-indigo: #7B7CF8;
+  --color-haven-indigo-hover: #9596FF;
 
-  --color-page-bg: #F4F4F8;
-  --color-card-bg: #FFFFFF;
-  --color-border: #E4E4E7;
+  --color-page-bg: #0B0B13;
+  --color-card-bg: #101019;
+  --color-surface: #161624;
+  --color-surface-hover: #1C1C2E;
+  --color-border: #1E1E30;
 
-  --color-text-primary: #09090B;
-  --color-text-secondary: #71717A;
-  --color-text-muted: #A1A1AA;
+  --color-text-primary: #E8E8F2;
+  --color-text-secondary: #7878A0;
+  --color-text-muted: #464664;
 
-  --color-fire-bg: #FEF2F2;
-  --color-fire-text: #991B1B;
-  --color-fire-border: #FCA5A5;
-  --color-fire-accent: #DC2626;
+  --color-fire-bg: rgba(239,68,68,0.12);
+  --color-fire-text: #FF6B6B;
+  --color-fire-border: rgba(239,68,68,0.3);
+  --color-fire-accent: #EF4444;
 
-  --color-urgent-bg: #FFFBEB;
-  --color-urgent-text: #92400E;
-  --color-urgent-border: #FCD34D;
+  --color-urgent-bg: rgba(217,119,6,0.12);
+  --color-urgent-text: #FBBF24;
+  --color-urgent-border: rgba(217,119,6,0.3);
   --color-urgent-accent: #D97706;
 
-  --color-watch-bg: #F0FDF4;
-  --color-watch-text: #065F46;
-  --color-watch-border: #6EE7B7;
+  --color-watch-bg: rgba(5,150,105,0.12);
+  --color-watch-text: #34D399;
+  --color-watch-border: rgba(5,150,105,0.3);
   --color-watch-accent: #059669;
 
-  --radius-card: 12px;
+  --radius-card: 10px;
   --radius-button: 8px;
   --radius-badge: 20px;
   --radius-input: 8px;
 }
 
-/* Shadcn/UI CSS variables */
+/* Shadcn/UI CSS variables — dark */
 :root {
-  --background: 0 0% 97.3%;
-  --foreground: 0 0% 3.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 3.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 3.9%;
-  --primary: 240 56% 60%;
+  --background: 244 20% 7%;
+  --foreground: 240 12% 92%;
+  --card: 244 18% 9%;
+  --card-foreground: 240 12% 92%;
+  --popover: 244 18% 11%;
+  --popover-foreground: 240 12% 92%;
+  --primary: 240 90% 73%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
-  --destructive: 0 84.2% 60.2%;
+  --secondary: 244 18% 14%;
+  --secondary-foreground: 240 10% 75%;
+  --muted: 244 18% 13%;
+  --muted-foreground: 240 10% 50%;
+  --accent: 244 18% 14%;
+  --accent-foreground: 240 10% 75%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 56% 60%;
+  --border: 244 18% 16%;
+  --input: 244 18% 16%;
+  --ring: 240 90% 73%;
   --radius: 0.75rem;
 }
 
