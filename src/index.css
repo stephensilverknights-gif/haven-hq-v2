@@ -10,11 +10,11 @@
   --color-card-bg: #101019;
   --color-surface: #161624;
   --color-surface-hover: #1C1C2E;
-  --color-border: #1E1E30;
+  --color-border: #383860;
 
   --color-text-primary: #E8E8F2;
-  --color-text-secondary: #7878A0;
-  --color-text-muted: #464664;
+  --color-text-secondary: #9090B8;
+  --color-text-muted: #7878A8;
 
   --color-fire-bg: rgba(239,68,68,0.12);
   --color-fire-text: #FF6B6B;
@@ -48,15 +48,15 @@
   --primary: 240 90% 73%;
   --primary-foreground: 0 0% 100%;
   --secondary: 244 18% 14%;
-  --secondary-foreground: 240 10% 75%;
+  --secondary-foreground: 240 22% 64%;
   --muted: 244 18% 13%;
-  --muted-foreground: 240 10% 50%;
+  --muted-foreground: 240 22% 56%;
   --accent: 244 18% 14%;
-  --accent-foreground: 240 10% 75%;
+  --accent-foreground: 240 22% 64%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
-  --border: 244 18% 16%;
-  --input: 244 18% 16%;
+  --border: 244 18% 22%;
+  --input: 244 18% 22%;
   --ring: 240 90% 73%;
   --radius: 0.75rem;
 }

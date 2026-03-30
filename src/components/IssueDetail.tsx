@@ -53,7 +53,7 @@ function StatusStepper({
                   ? 'bg-haven-indigo text-white shadow-sm'
                   : isPast
                     ? 'bg-haven-indigo/10 text-haven-indigo hover:bg-haven-indigo/15'
-                    : 'bg-surface text-text-muted hover:bg-surface-hover hover:text-text-secondary'
+                    : 'bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary'
               )}
             >
               {isPast && (
@@ -435,7 +435,7 @@ function IssueDetailContent({
                 className="text-sm text-text-secondary bg-surface border border-border rounded-[8px] px-3 py-2.5 cursor-pointer hover:bg-surface-hover transition-colors min-h-[44px]"
               >
                 {issue.slack_note || (
-                  <span className="text-text-muted italic">
+                  <span className="text-text-secondary italic">
                     Click to add a handoff note...
                   </span>
                 )}
