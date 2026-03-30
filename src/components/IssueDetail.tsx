@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ClipboardList, ArrowLeft, Check, ListChecks, ChevronDown } from 'lucide-react'
+import { X, ClipboardList, ArrowLeft, ArrowRight, Check, ListChecks, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -33,46 +33,142 @@ function StatusStepper({
   onStatusChange: (status: IssueStatus) => void
 }) {
   const currentIdx = STATUS_STEPS.indexOf(currentStatus)
+  const nextStatus = currentIdx < STATUS_STEPS.length - 1 ? STATUS_STEPS[currentIdx + 1] : null
+  const [showAll, setShowAll] = useState(false)
 
   return (
-    <div className="flex items-center overflow-x-auto pb-1 gap-0">
-      {STATUS_STEPS.map((step, idx) => {
-        const isActive = idx === currentIdx
-        const isPast = idx < currentIdx
-        const isClickable = idx !== currentIdx
-        const isLast = idx === STATUS_STEPS.length - 1
-
-        return (
-          <div key={step} className="flex items-center shrink-0">
-            <button
-              onClick={() => isClickable && onStatusChange(step)}
-              disabled={!isClickable}
-              className={cn(
-                'relative text-[11px] font-medium px-2.5 py-1.5 min-h-[44px] sm:min-h-0 rounded-[8px] whitespace-nowrap transition-all duration-150 flex items-center gap-1',
-                isActive
-                  ? 'bg-haven-indigo text-white shadow-sm'
-                  : isPast
-                    ? 'bg-haven-indigo/10 text-haven-indigo hover:bg-haven-indigo/15'
-                    : 'bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary'
-              )}
-            >
-              {isPast && (
-                <Check size={10} strokeWidth={2.5} className="shrink-0" />
-              )}
-              {STATUS_LABELS[step]}
-            </button>
-            {!isLast && (
-              <div
+    <>
+      {/* ── Desktop: horizontal stepper ── */}
+      <div className="hidden sm:flex items-center overflow-x-auto pb-1 gap-0">
+        {STATUS_STEPS.map((step, idx) => {
+          const isActive = idx === currentIdx
+          const isPast = idx < currentIdx
+          const isClickable = idx !== currentIdx
+          const isLast = idx === STATUS_STEPS.length - 1
+          return (
+            <div key={step} className="flex items-center shrink-0">
+              <button
+                onClick={() => isClickable && onStatusChange(step)}
+                disabled={!isClickable}
                 className={cn(
-                  'h-[1px] w-2 shrink-0 transition-colors duration-150',
-                  isPast || isActive ? 'bg-haven-indigo/30' : 'bg-border'
+                  'relative text-[11px] font-medium px-2.5 py-1.5 rounded-[8px] whitespace-nowrap transition-all duration-150 flex items-center gap-1',
+                  isActive
+                    ? 'bg-haven-indigo text-white shadow-sm'
+                    : isPast
+                      ? 'bg-haven-indigo/10 text-haven-indigo hover:bg-haven-indigo/15'
+                      : 'bg-surface text-text-secondary hover:bg-surface-hover hover:text-text-primary'
                 )}
-              />
-            )}
-          </div>
-        )
-      })}
-    </div>
+              >
+                {isPast && <Check size={10} strokeWidth={2.5} className="shrink-0" />}
+                {STATUS_LABELS[step]}
+              </button>
+              {!isLast && (
+                <div className={cn('h-[1px] w-2 shrink-0 transition-colors duration-150', isPast || isActive ? 'bg-haven-indigo/30' : 'bg-border')} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── Mobile: action-oriented layout ── */}
+      <div className="sm:hidden space-y-3">
+        {/* 5-segment progress bar */}
+        <div className="flex items-center gap-1">
+          {STATUS_STEPS.map((step, idx) => (
+            <div
+              key={step}
+              className={cn(
+                'flex-1 h-1.5 rounded-full transition-colors duration-200',
+                idx < currentIdx ? 'bg-haven-indigo/50' :
+                idx === currentIdx ? 'bg-haven-indigo' :
+                'bg-surface'
+              )}
+            />
+          ))}
+        </div>
+
+        {/* Current status + step count */}
+        <div className="flex items-center justify-between">
+          <span className="text-[14px] font-semibold text-text-primary">
+            {STATUS_LABELS[currentStatus]}
+          </span>
+          <span className="text-[11px] text-text-muted">
+            Step {currentIdx + 1} of {STATUS_STEPS.length}
+          </span>
+        </div>
+
+        {/* Primary advance button */}
+        {nextStatus && (
+          <button
+            onClick={() => onStatusChange(nextStatus)}
+            className="w-full bg-haven-indigo hover:bg-haven-indigo-hover text-white text-[14px] font-medium rounded-[10px] min-h-[52px] flex items-center justify-center gap-2 transition-colors active:scale-[0.98]"
+          >
+            Mark as {STATUS_LABELS[nextStatus]}
+            <ArrowRight size={15} strokeWidth={2} />
+          </button>
+        )}
+
+        {/* "All steps" expandable toggle */}
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="w-full flex items-center justify-between px-1 min-h-[44px] text-[12px] text-text-secondary hover:text-text-primary transition-colors"
+        >
+          <span>All steps</span>
+          <ChevronDown
+            size={14}
+            strokeWidth={1.5}
+            className={cn('transition-transform duration-200', showAll && 'rotate-180')}
+          />
+        </button>
+
+        {/* Expanded full step list */}
+        <AnimatePresence>
+          {showAll && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-1 pb-1">
+                {STATUS_STEPS.map((step, idx) => {
+                  const isActive = idx === currentIdx
+                  const isPast = idx < currentIdx
+                  return (
+                    <button
+                      key={step}
+                      onClick={() => {
+                        if (!isActive) { onStatusChange(step); setShowAll(false) }
+                      }}
+                      disabled={isActive}
+                      className={cn(
+                        'w-full text-left text-[13px] px-3 min-h-[48px] rounded-[8px] flex items-center gap-3 transition-colors',
+                        isActive
+                          ? 'bg-haven-indigo/15 text-haven-indigo font-medium cursor-default'
+                          : isPast
+                            ? 'text-haven-indigo/80 hover:bg-surface active:bg-surface'
+                            : 'text-text-secondary hover:bg-surface active:bg-surface'
+                      )}
+                    >
+                      <div className={cn(
+                        'w-[18px] h-[18px] rounded-full border-[1.5px] flex items-center justify-center shrink-0',
+                        isActive ? 'border-haven-indigo bg-haven-indigo' :
+                        isPast ? 'border-haven-indigo/50 bg-haven-indigo/20' :
+                        'border-border'
+                      )}>
+                        {(isActive || isPast) && <Check size={9} strokeWidth={3} className="text-white" />}
+                      </div>
+                      {STATUS_LABELS[step]}
+                    </button>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   )
 }
 
