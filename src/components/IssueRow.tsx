@@ -2,8 +2,7 @@ import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { MessageSquare } from 'lucide-react'
 import type { Issue, IssueStatus } from '@/lib/types'
-import { STATUS_LABELS } from '@/lib/types'
-import PriorityBadge from '@/components/PriorityBadge'
+import { STATUS_LABELS, ISSUE_TYPE_LABELS } from '@/lib/types'
 import PropertyBadge from '@/components/PropertyBadge'
 import ElapsedTimer from '@/components/ElapsedTimer'
 import { cn } from '@/lib/utils'
@@ -82,10 +81,10 @@ export default function IssueRow({
           <span className="text-[14px] font-semibold text-text-primary truncate flex-1 min-w-0">
             {issue.title}
           </span>
-          {/* Priority badge — hidden if group header already shows priority */}
-          <div className="shrink-0 hidden sm:block">
-            <PriorityBadge priority={issue.priority} />
-          </div>
+          {/* Task type */}
+          <span className="shrink-0 text-[11px] font-medium text-text-muted hidden sm:inline">
+            {ISSUE_TYPE_LABELS[issue.type]}
+          </span>
         </div>
 
         {/* Row 2: last activity note (if exists) */}
