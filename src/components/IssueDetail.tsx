@@ -61,7 +61,7 @@ function StatusSelector({
       }}
     >
       <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-[8px] text-sm border-border bg-surface gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 pointer-events-none">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
           <span className="text-text-primary truncate">{STATUS_LABELS[displayed]}</span>
         </div>
