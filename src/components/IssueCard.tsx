@@ -21,9 +21,7 @@ const borderGlow: Record<string, string> = {
 }
 
 const statusDotColors: Record<IssueStatus, string> = {
-  open:        '#7878A8',
   in_progress: '#7B7CF8',
-  waiting:     '#FBBF24',
   stuck:       '#FF6B6B',
   resolved:    '#059669',
 }

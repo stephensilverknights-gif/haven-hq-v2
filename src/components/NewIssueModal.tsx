@@ -356,7 +356,7 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
                     className="rounded-[8px] font-medium min-h-[44px]"
                     style={{ backgroundColor: '#5B5BD6' }}
                   >
-                    {isSaving ? 'Creating…' : 'Create Issue'}
+                    {isSaving ? 'Creating…' : 'Create Task'}
                   </Button>
                 </div>
               </form>

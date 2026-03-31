@@ -1,6 +1,6 @@
-export type IssueType = 'guest_request' | 'maintenance' | 'vendor' | 'cleaner'
+export type IssueType = 'guest_request' | 'maintenance' | 'cleaner'
 export type Priority = 'on_fire' | 'urgent' | 'watch'
-export type IssueStatus = 'open' | 'in_progress' | 'waiting' | 'stuck' | 'resolved'
+export type IssueStatus = 'in_progress' | 'stuck' | 'resolved'
 export type Reimbursable = 'none' | 'guest_owes' | 'landlord_owes' | 'haven_owes'
 
 export interface Profile {
@@ -75,7 +75,6 @@ export interface CostEntry {
 export const ISSUE_TYPE_LABELS: Record<IssueType, string> = {
   guest_request: 'Guest Request',
   maintenance: 'Maintenance',
-  vendor: 'Vendor',
   cleaner: 'Cleaner',
 }
 
@@ -86,9 +85,7 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
 }
 
 export const STATUS_LABELS: Record<IssueStatus, string> = {
-  open:        'Open',
   in_progress: 'In Progress',
-  waiting:     'Waiting',
   stuck:       'Stuck',
   resolved:    'Resolved',
 }

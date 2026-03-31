@@ -120,6 +120,7 @@ export function useCreateIssue() {
           description: input.description || null,
           type: input.type,
           priority: input.priority,
+          status: 'in_progress',
           created_by: input.created_by,
         })
         .select()
@@ -134,7 +135,7 @@ export function useCreateIssue() {
           issue_id: issue.id,
           user_id: input.created_by,
           note: input.initial_note,
-          status_to: 'open',
+          status_to: 'in_progress',
         })
 
       if (logError) throw logError

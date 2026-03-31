@@ -25,9 +25,7 @@ interface IssueDetailProps {
 }
 
 const STATUS_OPTIONS: { value: IssueStatus; label: string; color: string }[] = [
-  { value: 'open',        label: 'Open',        color: '#7878A8' },
   { value: 'in_progress', label: 'In Progress', color: '#7B7CF8' },
-  { value: 'waiting',     label: 'Waiting',     color: '#FBBF24' },
   { value: 'stuck',       label: 'Stuck',       color: '#FF6B6B' },
 ]
 
