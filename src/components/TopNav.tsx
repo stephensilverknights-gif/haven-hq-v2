@@ -19,7 +19,7 @@ interface TopNavProps {
 
 const navItems = [
   { to: '/', label: 'Hot Sheet', icon: Flame, end: true },
-  { to: '/issues', label: 'All Issues', icon: List, end: false },
+  { to: '/issues', label: 'All Tasks', icon: List, end: false },
   { to: '/costs', label: 'Costs', icon: DollarSign, end: false },
 ]
 
@@ -102,7 +102,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
             style={{ backgroundColor: '#7B7CF8' }}
           >
             <Plus size={18} strokeWidth={1.5} />
-            <span className="hidden sm:inline">New Issue</span>
+            <span className="hidden sm:inline">New Task</span>
           </Button>
 
           <div className="flex items-center gap-3">

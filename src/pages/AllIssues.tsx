@@ -52,7 +52,7 @@ export default function AllIssues() {
         {/* Left: filtered list */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
-            <h2 className="text-xl font-semibold text-text-primary mb-4">All Issues</h2>
+            <h2 className="text-xl font-semibold text-text-primary mb-4">All Tasks</h2>
 
             {/* Filters */}
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3 mb-6">
@@ -117,7 +117,7 @@ export default function AllIssues() {
             {isLoading ? (
               <p className="text-text-secondary py-10 text-center">Loading...</p>
             ) : activeIssues.length === 0 && resolvedIssues.length === 0 ? (
-              <p className="text-text-muted py-10 text-center">No issues match your filters.</p>
+              <p className="text-text-muted py-10 text-center">No tasks match your filters.</p>
             ) : (
               <>
                 <motion.div

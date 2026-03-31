@@ -466,7 +466,7 @@ function IssueDetailContent({
                 className="w-full rounded-[8px] text-watch-text border-watch-border hover:bg-watch-bg min-h-[44px]"
                 onClick={() => handleStatusChange('resolved')}
               >
-                Resolve Issue
+                Resolve Task
               </Button>
             </div>
           )}

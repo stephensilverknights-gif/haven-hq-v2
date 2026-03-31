@@ -177,8 +177,8 @@ export default function HotSheet() {
               </div>
             ) : issues.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <p className="text-text-secondary text-lg mb-1">No active issues</p>
-                <p className="text-text-muted text-sm">Click "New Issue" to create one</p>
+                <p className="text-text-secondary text-lg mb-1">No active tasks</p>
+                <p className="text-text-muted text-sm">Click "New Task" to create one</p>
               </div>
             ) : (
               <>

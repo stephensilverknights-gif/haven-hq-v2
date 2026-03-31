@@ -144,7 +144,7 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
 
               {/* Header */}
               <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border">
-                <h2 className="text-lg font-semibold text-text-primary">New Issue</h2>
+                <h2 className="text-lg font-semibold text-text-primary">New Task</h2>
                 <button
                   onClick={onClose}
                   className="flex items-center justify-center min-w-[44px] min-h-[44px] text-text-muted hover:text-text-secondary transition-colors -mr-2"
@@ -198,7 +198,7 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
                 {/* Type */}
                 <div>
                   <label className="text-sm font-medium text-text-primary mb-1.5 block">
-                    Issue Type
+                    Task Type
                   </label>
                   <Select value={type} onValueChange={(v) => setType(v as IssueType)}>
                     <SelectTrigger className="rounded-[8px] min-h-[44px]">
