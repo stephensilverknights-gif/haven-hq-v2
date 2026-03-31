@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ClipboardList, ArrowLeft, Check, ListChecks, ChevronDown } from 'lucide-react'
+import { X, ArrowLeft, Check, ListChecks, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
@@ -8,15 +8,13 @@ import PriorityBadge from '@/components/PriorityBadge'
 import PropertyBadge from '@/components/PropertyBadge'
 import ActivityLog from '@/components/ActivityLog'
 import CostEntry from '@/components/CostEntry'
-import { useUpdateIssueStatus } from '@/hooks/useIssues'
+import { useUpdateIssueStatus, useUpdateIssuePriority } from '@/hooks/useIssues'
 import { useChecklist, useToggleChecklistItem, useApplyTemplate } from '@/hooks/useChecklist'
 import { useWorkflowTemplates } from '@/hooks/useWorkflowTemplates'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Issue, IssueStatus } from '@/lib/types'
-import { STATUS_LABELS, ISSUE_TYPE_LABELS } from '@/lib/types'
+import type { Issue, IssueStatus, Priority } from '@/lib/types'
+import { STATUS_LABELS, ISSUE_TYPE_LABELS, PRIORITY_LABELS } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { supabase } from '@/lib/supabase'
-import { useQueryClient } from '@tanstack/react-query'
 
 interface IssueDetailProps {
   issue: Issue | null
@@ -71,6 +69,48 @@ function StatusSelector({
           >
             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
             {label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+const PRIORITY_OPTIONS: { value: Priority; color: string }[] = [
+  { value: 'on_fire', color: '#EF4444' },
+  { value: 'urgent',  color: '#D97706' },
+  { value: 'watch',   color: '#059669' },
+]
+
+function PrioritySelector({
+  currentPriority,
+  onPriorityChange,
+}: {
+  currentPriority: Priority
+  onPriorityChange: (p: Priority) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {PRIORITY_OPTIONS.map(({ value, color }) => {
+        const isSelected = value === currentPriority
+        return (
+          <button
+            key={value}
+            onClick={() => { if (value !== currentPriority) onPriorityChange(value) }}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-medium border transition-all duration-150',
+              isSelected
+                ? 'text-text-primary'
+                : 'bg-surface border-border text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+            )}
+            style={isSelected ? {
+              backgroundColor: color + '20',
+              borderColor: color + '70',
+              color,
+            } : {}}
+          >
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+            {PRIORITY_LABELS[value]}
           </button>
         )
       })}
@@ -240,11 +280,14 @@ function IssueDetailContent({
 }) {
   const { user } = useAuth()
   const updateStatus = useUpdateIssueStatus()
-  const queryClient = useQueryClient()
+  const updatePriority = useUpdateIssuePriority()
   const [statusNote, setStatusNote] = useState('')
   const [pendingStatus, setPendingStatus] = useState<IssueStatus | null>(null)
-  const [slackNote, setSlackNote] = useState('')
-  const [slackEditing, setSlackEditing] = useState(false)
+
+  const handlePriorityChange = (priority: Priority) => {
+    if (!user) return
+    updatePriority.mutate({ issueId: issue.id, priority, userId: user.id })
+  }
 
   const handleStatusChange = (newStatus: IssueStatus) => {
     setPendingStatus(newStatus)
@@ -263,23 +306,6 @@ function IssueDetailContent({
     })
     setPendingStatus(null)
     setStatusNote('')
-  }
-
-  const handleSlackUpdate = async () => {
-    if (!slackNote.trim()) return
-
-    await supabase
-      .from('issues')
-      .update({
-        slack_note: slackNote.trim(),
-        slack_note_updated_at: new Date().toISOString(),
-        updated_by: user?.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', issue.id)
-
-    queryClient.invalidateQueries({ queryKey: ['issues'] })
-    setSlackEditing(false)
   }
 
   const isPanel = variant === 'panel'
@@ -330,6 +356,17 @@ function IssueDetailContent({
                 {issue.description}
               </p>
             )}
+          </div>
+
+          {/* Priority */}
+          <div>
+            <label className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2 block">
+              Priority
+            </label>
+            <PrioritySelector
+              currentPriority={issue.priority}
+              onPriorityChange={handlePriorityChange}
+            />
           </div>
 
           {/* Status Stepper */}
@@ -390,61 +427,6 @@ function IssueDetailContent({
 
           {/* Checklist */}
           <IssueChecklist issueId={issue.id} />
-
-          <Separator />
-
-          {/* Handoff Note */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <ClipboardList size={14} strokeWidth={1.5} className="text-text-muted" />
-              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
-                Handoff Note
-              </label>
-            </div>
-            {slackEditing ? (
-              <div className="space-y-2">
-                <Textarea
-                  value={slackNote}
-                  onChange={(e) => setSlackNote(e.target.value)}
-                  placeholder="What does the next person need to know?"
-                  className="rounded-[8px] min-h-[60px] text-sm"
-                  autoFocus
-                />
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={handleSlackUpdate}
-                    className="rounded-[8px] min-h-[44px] sm:min-h-0"
-                    style={{ backgroundColor: '#7B7CF8' }}
-                  >
-                    Update
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setSlackEditing(false)}
-                    className="rounded-[8px] min-h-[44px] sm:min-h-0"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div
-                onClick={() => {
-                  setSlackNote(issue.slack_note ?? '')
-                  setSlackEditing(true)
-                }}
-                className="text-sm text-text-secondary bg-surface border border-border rounded-[8px] px-3 py-2.5 cursor-pointer hover:bg-surface-hover transition-colors min-h-[44px]"
-              >
-                {issue.slack_note || (
-                  <span className="text-text-secondary italic">
-                    Click to add a handoff note...
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
 
           <Separator />
 

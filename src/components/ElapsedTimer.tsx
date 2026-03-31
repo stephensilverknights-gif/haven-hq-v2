@@ -24,10 +24,11 @@ function isOverTwoHours(startTime: string): boolean {
 }
 
 export default function ElapsedTimer({ startTime, priority, className }: ElapsedTimerProps) {
-  const [elapsed, setElapsed] = useState(() => formatElapsed(startTime))
-  const [overdue, setOverdue] = useState(() => isOverTwoHours(startTime))
+  const [elapsed, setElapsed] = useState(() => startTime ? formatElapsed(startTime) : '00:00')
+  const [overdue, setOverdue] = useState(() => startTime ? isOverTwoHours(startTime) : false)
 
   useEffect(() => {
+    if (!startTime) return
     setElapsed(formatElapsed(startTime))
     setOverdue(isOverTwoHours(startTime))
 
@@ -39,6 +40,8 @@ export default function ElapsedTimer({ startTime, priority, className }: Elapsed
     return () => clearInterval(interval)
   }, [startTime])
 
+  if (!startTime) return null
+
   const colorClass = priority === 'on_fire'
     ? 'text-fire-text'
     : priority === 'urgent'
@@ -46,14 +49,15 @@ export default function ElapsedTimer({ startTime, priority, className }: Elapsed
       : 'text-text-secondary'
 
   return (
-    <span className={cn('inline-flex items-center gap-1.5 text-xs font-mono font-medium', colorClass, className)}>
+    <span className={cn('inline-flex items-center gap-1.5 text-[11px] font-medium', colorClass, className)}>
       {priority === 'on_fire' && overdue && (
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
         </span>
       )}
-      {elapsed}
+      <span className="text-text-muted font-normal">Task Created</span>
+      <span className="font-mono">{elapsed}</span>
     </span>
   )
 }

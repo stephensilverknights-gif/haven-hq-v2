@@ -29,19 +29,22 @@ async function fetchIssues(): Promise<Issue[]> {
 }
 
 // Fetches all activity log entries at once — no dependency on issueIds, fires in parallel
-async function fetchLastNotes(): Promise<Record<string, string>> {
+async function fetchLastNotes(): Promise<Record<string, { note: string; author: string }>> {
   const { data, error } = await supabase
     .from('activity_log')
-    .select('issue_id, note')
+    .select('issue_id, note, user:profiles!activity_log_user_id_fkey(name)')
     .order('created_at', { ascending: false })
     .limit(1000)
 
   if (error) throw error
 
-  const noteMap: Record<string, string> = {}
-  for (const entry of data ?? []) {
+  const noteMap: Record<string, { note: string; author: string }> = {}
+  for (const entry of (data ?? []) as { issue_id: string; note: string; user: { name: string } | null }[]) {
     if (!noteMap[entry.issue_id]) {
-      noteMap[entry.issue_id] = entry.note
+      noteMap[entry.issue_id] = {
+        note: entry.note,
+        author: entry.user?.name ?? '',
+      }
     }
   }
   return noteMap
@@ -99,7 +102,7 @@ export function useIssues() {
   return {
     issues: sortedIssues,
     allIssues: issues,
-    lastNotes: lastNotesQuery.data ?? {},
+    lastNotes: lastNotesQuery.data ?? {} as Record<string, { note: string; author: string }>,
     counts,
     isLoading: issuesQuery.isLoading,
     error: issuesQuery.error,
@@ -145,6 +148,36 @@ export function useCreateIssue() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['issues'] })
       queryClient.invalidateQueries({ queryKey: ['lastNotes'] })
+    },
+  })
+}
+
+export function useUpdateIssuePriority() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      issueId,
+      priority,
+      userId,
+    }: {
+      issueId: string
+      priority: Priority
+      userId: string
+    }) => {
+      const { error } = await supabase
+        .from('issues')
+        .update({
+          priority,
+          updated_by: userId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', issueId)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['issues'] })
     },
   })
 }

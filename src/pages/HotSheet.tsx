@@ -77,7 +77,7 @@ function IssueGroup({
   dotColor,
   label,
   issues,
-  handoffNotes,
+  lastNotes,
   progressMap,
   selectedId,
   onSelect,
@@ -88,7 +88,7 @@ function IssueGroup({
   dotColor: string
   label: string
   issues: Issue[]
-  handoffNotes: Record<string, string | undefined>
+  lastNotes: Record<string, { note: string; author: string } | undefined>
   progressMap: Record<string, { completed: number; total: number }>
   selectedId: string | null
   onSelect: (id: string) => void
@@ -121,7 +121,8 @@ function IssueGroup({
           >
             <IssueRow
               issue={issue}
-              handoffNote={handoffNotes[issue.id]}
+              lastNote={lastNotes[issue.id]?.note}
+              lastNoteAuthor={lastNotes[issue.id]?.author}
               checklistProgress={progressMap[issue.id] ?? null}
               isSelected={selectedId === issue.id}
               onClick={() => onSelect(issue.id)}
@@ -134,16 +135,11 @@ function IssueGroup({
 }
 
 export default function HotSheet() {
-  const { issues, counts, isLoading, error } = useIssues()
+  const { issues, counts, isLoading, error, lastNotes } = useIssues()
   const [showNewIssue, setShowNewIssue] = useState(false)
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null)
 
   const { data: progressMap = {} } = useChecklistProgressMap()
-
-  const handoffNotes: Record<string, string | undefined> = {}
-  for (const issue of issues) {
-    if (issue.slack_note) handoffNotes[issue.id] = issue.slack_note
-  }
 
   const grouped = {
     on_fire: issues.filter((i) => i.priority === 'on_fire'),
@@ -193,7 +189,7 @@ export default function HotSheet() {
                       dotColor={dotColor}
                       label={label}
                       issues={grouped[priority]}
-                      handoffNotes={handoffNotes}
+                      lastNotes={lastNotes}
                       progressMap={progressMap}
                       selectedId={selectedIssueId}
                       onSelect={setSelectedIssueId}

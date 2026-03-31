@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
-import { StickyNote } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
 import type { Issue, IssueStatus } from '@/lib/types'
 import { STATUS_LABELS } from '@/lib/types'
 import PriorityBadge from '@/components/PriorityBadge'
@@ -28,7 +28,8 @@ const statusDotColors: Record<IssueStatus, string> = {
 
 interface IssueRowProps {
   issue: Issue
-  handoffNote?: string
+  lastNote?: string
+  lastNoteAuthor?: string
   checklistProgress?: { completed: number; total: number } | null
   isSelected?: boolean
   onClick: () => void
@@ -36,7 +37,8 @@ interface IssueRowProps {
 
 export default function IssueRow({
   issue,
-  handoffNote,
+  lastNote,
+  lastNoteAuthor,
   checklistProgress,
   isSelected = false,
   onClick,
@@ -86,11 +88,16 @@ export default function IssueRow({
           </div>
         </div>
 
-        {/* Row 2: handoff note (if exists) */}
-        {handoffNote && (
+        {/* Row 2: last activity note (if exists) */}
+        {lastNote && (
           <div className="flex items-center gap-1.5 mt-1.5">
-            <StickyNote size={11} strokeWidth={1.5} className="text-text-muted shrink-0" />
-            <p className="text-[12px] text-text-secondary truncate">{handoffNote}</p>
+            <MessageSquare size={11} strokeWidth={1.5} className="text-text-muted shrink-0" />
+            <p className="text-[12px] text-text-secondary truncate">
+              {lastNoteAuthor && (
+                <span className="font-medium text-text-muted mr-1">{lastNoteAuthor}:</span>
+              )}
+              {lastNote}
+            </p>
           </div>
         )}
 
@@ -130,13 +137,20 @@ export default function IssueRow({
           </div>
 
           {/* Time */}
-          <div className="shrink-0">
+          <div className="shrink-0 text-right">
             {isOnFire ? (
               <ElapsedTimer startTime={issue.created_at} priority={issue.priority} />
             ) : (
-              <span className="text-[11px] text-text-muted">
-                {formatDistanceToNow(new Date(issue.updated_at), { addSuffix: true })}
-              </span>
+              <div>
+                <span className="text-[11px] text-text-muted">
+                  {formatDistanceToNow(new Date(issue.updated_at), { addSuffix: true })}
+                </span>
+                {issue.updater?.name && (
+                  <p className="text-[10px] text-text-muted opacity-70">
+                    by {issue.updater.name}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>

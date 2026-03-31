@@ -131,7 +131,7 @@ export default function AllIssues() {
                       key={issue.id}
                       issue={issue}
                       handoffNote={issue.slack_note ?? undefined}
-                      lastNote={lastNotes[issue.id]}
+                      lastNote={lastNotes[issue.id]?.note}
                       onClick={() => setSelectedIssueId(issue.id)}
                     />
                   ))}
@@ -165,7 +165,7 @@ export default function AllIssues() {
                               <IssueCard
                                 issue={issue}
                                 handoffNote={issue.slack_note ?? undefined}
-                                lastNote={lastNotes[issue.id]}
+                                lastNote={lastNotes[issue.id]?.note}
                                 onClick={() => setSelectedIssueId(issue.id)}
                               />
                             </div>
