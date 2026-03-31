@@ -39,11 +39,13 @@ async function fetchLastNotes(): Promise<Record<string, { note: string; author: 
   if (error) throw error
 
   const noteMap: Record<string, { note: string; author: string }> = {}
-  for (const entry of (data ?? []) as { issue_id: string; note: string; user: { name: string } | null }[]) {
+  for (const entry of data ?? []) {
     if (!noteMap[entry.issue_id]) {
+      // Supabase returns joined rows as array; grab first element
+      const userRow = Array.isArray(entry.user) ? entry.user[0] : entry.user
       noteMap[entry.issue_id] = {
-        note: entry.note,
-        author: entry.user?.name ?? '',
+        note: entry.note as string,
+        author: (userRow as { name?: string } | null)?.name ?? '',
       }
     }
   }
