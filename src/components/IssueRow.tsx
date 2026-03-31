@@ -6,6 +6,7 @@ import { STATUS_LABELS } from '@/lib/types'
 import PriorityBadge from '@/components/PriorityBadge'
 import PropertyBadge from '@/components/PropertyBadge'
 import ElapsedTimer from '@/components/ElapsedTimer'
+import { cn } from '@/lib/utils'
 
 const borderColors: Record<string, string> = {
   on_fire: '#EF4444',
@@ -49,14 +50,18 @@ export default function IssueRow({
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
       whileTap={{ scale: 0.995 }}
       onClick={onClick}
-      className={`bg-card-bg rounded-[10px] border border-border cursor-pointer overflow-hidden shadow-sm${isSelected ? ' ring-1 ring-haven-indigo/50 bg-surface' : ''}`}
+      className={cn(
+        'rounded-[10px] border border-border cursor-pointer overflow-hidden shadow-sm transition-colors duration-150',
+        isSelected
+          ? 'bg-surface-hover ring-1 ring-haven-indigo/40'
+          : 'bg-card-bg hover:bg-surface'
+      )}
       style={{
         borderLeftWidth: 3,
         borderLeftColor: borderColors[issue.priority],
-        boxShadow: borderGlow[issue.priority],
+        boxShadow: isSelected ? `0 0 0 1px rgba(123,124,248,0.4), ${borderGlow[issue.priority]}` : borderGlow[issue.priority],
       }}
     >
       <div className="px-3.5 py-3">
