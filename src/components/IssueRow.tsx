@@ -21,11 +21,11 @@ const borderGlow: Record<string, string> = {
 }
 
 const statusDotColors: Record<IssueStatus, string> = {
-  open:              '#464664',
-  in_progress:       '#7B7CF8',
-  pending_response:  '#D97706',
-  vendor_scheduled:  '#0891B2',
-  resolved:          '#059669',
+  open:        '#7878A8',
+  in_progress: '#7B7CF8',
+  waiting:     '#FBBF24',
+  stuck:       '#FF6B6B',
+  resolved:    '#059669',
 }
 
 interface IssueRowProps {

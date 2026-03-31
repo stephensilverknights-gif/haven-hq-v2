@@ -3,11 +3,11 @@ import type { IssueStatus } from '@/lib/types'
 import { STATUS_LABELS } from '@/lib/types'
 
 const statusClasses: Record<IssueStatus, string> = {
-  open: 'bg-zinc-100 text-zinc-700 border-zinc-200',
-  in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
-  pending_response: 'bg-amber-50 text-amber-700 border-amber-200',
-  vendor_scheduled: 'bg-purple-50 text-purple-700 border-purple-200',
-  resolved: 'bg-green-50 text-green-700 border-green-200',
+  open:        'bg-surface text-text-muted border-border',
+  in_progress: 'bg-haven-indigo/10 text-haven-indigo border-haven-indigo/30',
+  waiting:     'bg-urgent-bg text-urgent-text border-urgent-border',
+  stuck:       'bg-fire-bg text-fire-text border-fire-border',
+  resolved:    'bg-watch-bg text-watch-text border-watch-border',
 }
 
 interface StatusBadgeProps {

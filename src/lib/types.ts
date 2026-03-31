@@ -1,6 +1,6 @@
 export type IssueType = 'guest_request' | 'maintenance' | 'vendor' | 'cleaner'
 export type Priority = 'on_fire' | 'urgent' | 'watch'
-export type IssueStatus = 'open' | 'in_progress' | 'pending_response' | 'vendor_scheduled' | 'resolved'
+export type IssueStatus = 'open' | 'in_progress' | 'waiting' | 'stuck' | 'resolved'
 export type Reimbursable = 'none' | 'guest_owes' | 'landlord_owes' | 'haven_owes'
 
 export interface Profile {
@@ -86,20 +86,12 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
 }
 
 export const STATUS_LABELS: Record<IssueStatus, string> = {
-  open: 'Open',
+  open:        'Open',
   in_progress: 'In Progress',
-  pending_response: 'Pending Response',
-  vendor_scheduled: 'Vendor Scheduled',
-  resolved: 'Resolved',
+  waiting:     'Waiting',
+  stuck:       'Stuck',
+  resolved:    'Resolved',
 }
-
-export const STATUS_STEPS: IssueStatus[] = [
-  'open',
-  'in_progress',
-  'pending_response',
-  'vendor_scheduled',
-  'resolved',
-]
 
 export const REIMBURSABLE_LABELS: Record<Reimbursable, string> = {
   none: 'None',
