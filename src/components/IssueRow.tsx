@@ -49,19 +49,22 @@ export default function IssueRow({
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-      whileTap={{ scale: 0.995 }}
+      whileHover={isSelected ? {} : { y: -2, boxShadow: `0 4px 16px rgba(0,0,0,0.4), ${borderGlow[issue.priority]}` }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
       onClick={onClick}
       className={cn(
-        'rounded-[10px] border border-border cursor-pointer overflow-hidden shadow-sm transition-colors duration-150',
+        'rounded-[10px] border cursor-pointer overflow-hidden transition-colors duration-150',
         isSelected
-          ? 'bg-surface-hover ring-1 ring-haven-indigo/40'
-          : 'bg-card-bg hover:bg-surface'
+          ? 'bg-surface-hover border-haven-indigo/40 ring-1 ring-haven-indigo/30'
+          : 'bg-card-bg border-border hover:bg-surface hover:border-border/80'
       )}
       style={{
         borderLeftWidth: 3,
         borderLeftColor: borderColors[issue.priority],
-        boxShadow: isSelected ? `0 0 0 1px rgba(123,124,248,0.4), ${borderGlow[issue.priority]}` : borderGlow[issue.priority],
+        boxShadow: isSelected
+          ? `0 0 0 1px rgba(123,124,248,0.3), ${borderGlow[issue.priority]}`
+          : borderGlow[issue.priority],
       }}
     >
       <div className="px-3.5 py-3">
