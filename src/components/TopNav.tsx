@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useMatch } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, LogOut, Flame, List, DollarSign, Menu, Settings } from 'lucide-react'
+import { Plus, LogOut, Flame, DollarSign, Menu, Settings } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +19,6 @@ interface TopNavProps {
 
 const navItems = [
   { to: '/', label: 'Hot Sheet', icon: Flame, end: true },
-  { to: '/issues', label: 'All Tasks', icon: List, end: false },
   { to: '/costs', label: 'Costs', icon: DollarSign, end: false },
 ]
 

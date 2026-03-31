@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import Login from '@/pages/Login'
 import HotSheet from '@/pages/HotSheet'
-import AllIssues from '@/pages/AllIssues'
 import CostsView from '@/pages/CostsView'
 import Settings from '@/pages/Settings'
 import type { ReactNode } from 'react'
@@ -34,14 +33,6 @@ export default function App() {
         element={
           <ProtectedRoute>
             <HotSheet />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/issues"
-        element={
-          <ProtectedRoute>
-            <AllIssues />
           </ProtectedRoute>
         }
       />

@@ -1,14 +1,23 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Flame, Clock, Eye } from 'lucide-react'
+import { Flame, Clock, Eye, ChevronDown } from 'lucide-react'
 import TopNav from '@/components/TopNav'
 import IssueRow from '@/components/IssueRow'
 import NewIssueModal from '@/components/NewIssueModal'
 import IssueDetail from '@/components/IssueDetail'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useIssues } from '@/hooks/useIssues'
+import { useProperties } from '@/hooks/useProperties'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Issue, Priority } from '@/lib/types'
+import type { Issue, Priority, IssueType } from '@/lib/types'
+import { ISSUE_TYPE_LABELS, PRIORITY_LABELS } from '@/lib/types'
 
 function useChecklistProgressMap() {
   return useQuery({
@@ -35,7 +44,7 @@ function SummaryStrip({ counts }: { counts: { on_fire: number; urgent: number; w
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="flex items-center gap-5 mb-6"
+      className="flex items-center gap-5 mb-4"
     >
       <div className="flex items-center gap-2">
         <Flame size={13} strokeWidth={1.5} className="text-fire-text" />
@@ -135,19 +144,49 @@ function IssueGroup({
 }
 
 export default function HotSheet() {
-  const { issues, counts, isLoading, error, lastNotes } = useIssues()
+  const { issues, allIssues, counts, isLoading, error, lastNotes } = useIssues()
+  const { data: properties } = useProperties()
   const [showNewIssue, setShowNewIssue] = useState(false)
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null)
+  const [showResolved, setShowResolved] = useState(false)
+
+  // Filters
+  const [filterPriority, setFilterPriority] = useState<string>('all')
+  const [filterType, setFilterType] = useState<string>('all')
+  const [filterProperty, setFilterProperty] = useState<string>('all')
 
   const { data: progressMap = {} } = useChecklistProgressMap()
 
+  // Apply filters to active issues
+  const filteredIssues = useMemo(() => {
+    return issues.filter((issue) => {
+      if (filterPriority !== 'all' && issue.priority !== filterPriority) return false
+      if (filterType !== 'all' && issue.type !== filterType) return false
+      if (filterProperty !== 'all' && issue.property_id !== filterProperty) return false
+      return true
+    })
+  }, [issues, filterPriority, filterType, filterProperty])
+
+  // Apply same filters to resolved
+  const resolvedIssues = useMemo(() => {
+    return allIssues.filter((issue) => {
+      if (issue.status !== 'resolved') return false
+      if (filterPriority !== 'all' && issue.priority !== filterPriority) return false
+      if (filterType !== 'all' && issue.type !== filterType) return false
+      if (filterProperty !== 'all' && issue.property_id !== filterProperty) return false
+      return true
+    })
+  }, [allIssues, filterPriority, filterType, filterProperty])
+
   const grouped = {
-    on_fire: issues.filter((i) => i.priority === 'on_fire'),
-    urgent:  issues.filter((i) => i.priority === 'urgent'),
-    watch:   issues.filter((i) => i.priority === 'watch'),
+    on_fire: filteredIssues.filter((i) => i.priority === 'on_fire'),
+    urgent:  filteredIssues.filter((i) => i.priority === 'urgent'),
+    watch:   filteredIssues.filter((i) => i.priority === 'watch'),
   }
 
-  const selectedIssue = issues.find((i) => i.id === selectedIssueId) ?? null
+  const hasActiveFilters = filterPriority !== 'all' || filterType !== 'all' || filterProperty !== 'all'
+
+  const selectedIssue = allIssues.find((i) => i.id === selectedIssueId) ?? null
 
   return (
     <div className="h-screen flex flex-col bg-page-bg">
@@ -157,13 +196,62 @@ export default function HotSheet() {
         {/* Left: issue list */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-4 py-5 sm:px-6 sm:py-6">
+
+            {/* Filter bar */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2 mb-5">
+              <Select value={filterPriority} onValueChange={setFilterPriority}>
+                <SelectTrigger className="w-full sm:w-[150px] rounded-[8px] text-sm min-h-[40px]">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priorities</SelectItem>
+                  {(Object.entries(PRIORITY_LABELS) as [Priority, string][]).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-full sm:w-[145px] rounded-[8px] text-sm min-h-[40px]">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {(Object.entries(ISSUE_TYPE_LABELS) as [IssueType, string][]).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterProperty} onValueChange={setFilterProperty}>
+                <SelectTrigger className="w-full sm:w-[170px] rounded-[8px] text-sm min-h-[40px] col-span-2 sm:col-span-1">
+                  <SelectValue placeholder="Property" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Properties</SelectItem>
+                  {properties?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={() => { setFilterPriority('all'); setFilterType('all'); setFilterProperty('all') }}
+                  className="text-[12px] text-haven-indigo hover:underline font-medium px-1"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
                 <p className="text-text-secondary text-sm">Loading…</p>
               </div>
             ) : error ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
-                <p className="text-text-secondary text-sm">Couldn't load issues.</p>
+                <p className="text-text-secondary text-sm">Couldn't load tasks.</p>
                 <button
                   onClick={() => window.location.reload()}
                   className="text-haven-indigo text-sm hover:underline"
@@ -171,31 +259,82 @@ export default function HotSheet() {
                   Retry
                 </button>
               </div>
-            ) : issues.length === 0 ? (
+            ) : filteredIssues.length === 0 && resolvedIssues.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <p className="text-text-secondary text-lg mb-1">No active tasks</p>
-                <p className="text-text-muted text-sm">Click "New Task" to create one</p>
+                {hasActiveFilters ? (
+                  <p className="text-text-muted text-sm">No tasks match your filters.</p>
+                ) : (
+                  <>
+                    <p className="text-text-secondary text-lg mb-1">No active tasks</p>
+                    <p className="text-text-muted text-sm">Click "New Task" to create one</p>
+                  </>
+                )}
               </div>
             ) : (
               <>
-                <SummaryStrip counts={counts} />
-                <div className="flex flex-col gap-5">
-                  {priorityGroups.map(({ priority, icon, labelClass, dotColor, label }) => (
-                    <IssueGroup
-                      key={priority}
-                      priority={priority}
-                      icon={icon}
-                      labelClass={labelClass}
-                      dotColor={dotColor}
-                      label={label}
-                      issues={grouped[priority]}
-                      lastNotes={lastNotes}
-                      progressMap={progressMap}
-                      selectedId={selectedIssueId}
-                      onSelect={setSelectedIssueId}
-                    />
-                  ))}
-                </div>
+                {filteredIssues.length > 0 && (
+                  <>
+                    <SummaryStrip counts={counts} />
+                    <div className="flex flex-col gap-5">
+                      {priorityGroups.map(({ priority, icon, labelClass, dotColor, label }) => (
+                        <IssueGroup
+                          key={priority}
+                          priority={priority}
+                          icon={icon}
+                          labelClass={labelClass}
+                          dotColor={dotColor}
+                          label={label}
+                          issues={grouped[priority]}
+                          lastNotes={lastNotes}
+                          progressMap={progressMap}
+                          selectedId={selectedIssueId}
+                          onSelect={setSelectedIssueId}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Resolved section */}
+                {resolvedIssues.length > 0 && (
+                  <div className={filteredIssues.length > 0 ? 'mt-8' : ''}>
+                    <button
+                      onClick={() => setShowResolved(!showResolved)}
+                      className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors mb-3 min-h-[44px]"
+                    >
+                      <ChevronDown
+                        size={16}
+                        strokeWidth={1.5}
+                        className={`transition-transform ${showResolved ? 'rotate-180' : ''}`}
+                      />
+                      Resolved ({resolvedIssues.length})
+                    </button>
+
+                    <AnimatePresence>
+                      {showResolved && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="grid gap-2 overflow-hidden"
+                        >
+                          {resolvedIssues.map((issue) => (
+                            <div key={issue.id} className="opacity-60">
+                              <IssueRow
+                                issue={issue}
+                                lastNote={lastNotes[issue.id]?.note}
+                                lastNoteAuthor={lastNotes[issue.id]?.author}
+                                checklistProgress={progressMap[issue.id] ?? null}
+                                isSelected={selectedIssueId === issue.id}
+                                onClick={() => setSelectedIssueId(issue.id)}
+                              />
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
               </>
             )}
           </div>
