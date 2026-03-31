@@ -4,7 +4,6 @@ import { X, ClipboardList, ArrowLeft, Check, ListChecks, ChevronDown } from 'luc
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import PriorityBadge from '@/components/PriorityBadge'
 import PropertyBadge from '@/components/PropertyBadge'
 import ActivityLog from '@/components/ActivityLog'
@@ -51,32 +50,33 @@ function StatusSelector({
   }
 
   const displayed = pendingStatus ?? currentStatus
-  const dotColor = STATUS_OPTIONS.find(o => o.value === displayed)?.color ?? '#7878A8'
 
   return (
-    <Select
-      value={displayed}
-      onValueChange={(val) => {
-        if (val !== currentStatus) onStatusChange(val as IssueStatus)
-      }}
-    >
-      <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-[8px] text-sm border-border bg-surface gap-2">
-        <div className="flex items-center gap-2 min-w-0 pointer-events-none">
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
-          <span className="text-text-primary truncate">{STATUS_LABELS[displayed]}</span>
-        </div>
-      </SelectTrigger>
-      <SelectContent>
-        {STATUS_OPTIONS.map(({ value, label, color }) => (
-          <SelectItem key={value} value={value}>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-              {label}
-            </div>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="flex flex-wrap gap-2">
+      {STATUS_OPTIONS.map(({ value, label, color }) => {
+        const isSelected = value === displayed
+        return (
+          <button
+            key={value}
+            onClick={() => { if (value !== currentStatus) onStatusChange(value as IssueStatus) }}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-medium border transition-all duration-150',
+              isSelected
+                ? 'text-text-primary'
+                : 'bg-surface border-border text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+            )}
+            style={isSelected ? {
+              backgroundColor: color + '20',
+              borderColor: color + '70',
+              color,
+            } : {}}
+          >
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+            {label}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
