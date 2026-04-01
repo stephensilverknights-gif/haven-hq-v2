@@ -78,7 +78,7 @@ export default function IssueRow({
       style={{
         borderLeftWidth: 3,
         borderLeftColor: borderColors[issue.priority],
-        boxShadow: isSelected ? '0 0 0 1px rgba(123,124,248,0.3)' : undefined,
+        boxShadow: isSelected ? '0 0 0 1px rgba(123,124,248,0.3)' : 'none',
       }}
     >
       <div className="px-3.5 py-3">
