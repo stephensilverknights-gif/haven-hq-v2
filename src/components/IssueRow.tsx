@@ -13,18 +13,6 @@ const borderColors: Record<string, string> = {
   watch:   '#059669',
 }
 
-// Hover glow pulse keyframes per priority
-const hoverGlowDim: Record<string, string> = {
-  on_fire: '0 2px 8px rgba(0,0,0,0.3), 0 0 8px rgba(239,68,68,0.2)',
-  urgent:  '0 2px 8px rgba(0,0,0,0.3), 0 0 8px rgba(217,119,6,0.2)',
-  watch:   '0 2px 8px rgba(0,0,0,0.3), 0 0 8px rgba(5,150,105,0.2)',
-}
-
-const hoverGlowBright: Record<string, string> = {
-  on_fire: '0 4px 16px rgba(0,0,0,0.4), 0 0 28px rgba(239,68,68,0.6)',
-  urgent:  '0 4px 16px rgba(0,0,0,0.4), 0 0 28px rgba(217,119,6,0.6)',
-  watch:   '0 4px 16px rgba(0,0,0,0.4), 0 0 28px rgba(5,150,105,0.6)',
-}
 
 const statusDotColors: Record<IssueStatus, string> = {
   in_progress: '#7B7CF8',
@@ -55,22 +43,14 @@ export default function IssueRow({
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={isSelected ? {} : {
-        y: -2,
-        boxShadow: [
-          hoverGlowDim[issue.priority],
-          hoverGlowBright[issue.priority],
-          hoverGlowDim[issue.priority],
-        ],
-      }}
+      whileHover={isSelected ? {} : { y: -2 }}
       whileTap={{ scale: 0.98 }}
-      transition={{
-        y: { duration: 0.15, ease: [0.16, 1, 0.3, 1] },
-        boxShadow: { duration: 1.4, repeat: Infinity, ease: 'easeInOut' },
-      }}
+      transition={{ y: { duration: 0.15, ease: [0.16, 1, 0.3, 1] } }}
       onClick={onClick}
+      data-priority={issue.priority}
+      data-selected={isSelected ? 'true' : 'false'}
       className={cn(
-        'rounded-[10px] border cursor-pointer overflow-hidden transition-colors duration-150',
+        'issue-card rounded-[10px] border cursor-pointer overflow-hidden transition-colors duration-150',
         isSelected
           ? 'bg-surface-hover border-haven-indigo/40 ring-1 ring-haven-indigo/30'
           : 'bg-card-bg border-border hover:bg-surface hover:border-border/80',
@@ -78,7 +58,6 @@ export default function IssueRow({
       style={{
         borderLeftWidth: 3,
         borderLeftColor: borderColors[issue.priority],
-        boxShadow: isSelected ? '0 0 0 1px rgba(123,124,248,0.3)' : 'none',
       }}
     >
       <div className="px-3.5 py-3">

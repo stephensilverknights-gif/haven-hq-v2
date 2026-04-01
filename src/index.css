@@ -88,6 +88,23 @@
   --radius: 0.75rem;
 }
 
+/* Card hover glow — pure CSS, no JS state, instant on/off */
+@keyframes glow-fire   {
+  0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 8px  rgba(239,68,68,0.2); }
+  50%      { box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 28px rgba(239,68,68,0.6); }
+}
+@keyframes glow-urgent {
+  0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 8px  rgba(217,119,6,0.2); }
+  50%      { box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 28px rgba(217,119,6,0.6); }
+}
+@keyframes glow-watch  {
+  0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 8px  rgba(5,150,105,0.2); }
+  50%      { box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 28px rgba(5,150,105,0.6); }
+}
+.issue-card[data-priority="on_fire"]:not([data-selected="true"]):hover { animation: glow-fire   1.4s ease-in-out infinite; }
+.issue-card[data-priority="urgent"]:not([data-selected="true"]):hover  { animation: glow-urgent 1.4s ease-in-out infinite; }
+.issue-card[data-priority="watch"]:not([data-selected="true"]):hover   { animation: glow-watch  1.4s ease-in-out infinite; }
+
 /* Slim themed scrollbar — replaces the browser default grey */
 .themed-scroll {
   scrollbar-width: thin;
