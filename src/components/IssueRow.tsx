@@ -50,7 +50,7 @@ export default function IssueRow({
       data-priority={issue.priority}
       data-selected={isSelected ? 'true' : 'false'}
       className={cn(
-        'issue-card rounded-[10px] border cursor-pointer overflow-hidden transition-colors duration-150',
+        'issue-card w-full rounded-[10px] border cursor-pointer overflow-hidden transition-colors duration-150',
         isSelected
           ? 'bg-surface-hover border-haven-indigo/40 ring-1 ring-haven-indigo/30'
           : 'bg-card-bg border-border hover:bg-surface hover:border-border/80',

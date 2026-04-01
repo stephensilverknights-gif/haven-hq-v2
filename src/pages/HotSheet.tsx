@@ -44,7 +44,7 @@ function SummaryStrip({ counts }: { counts: { on_fire: number; urgent: number; w
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="flex items-center gap-5 mb-4"
+      className="flex items-center flex-wrap gap-x-4 gap-y-2 mb-4"
     >
       <div className="flex items-center gap-2">
         <Flame size={13} strokeWidth={1.5} className="text-fire-text" />
@@ -194,7 +194,7 @@ export default function HotSheet() {
 
       <div className="flex flex-1 min-h-0">
         {/* Left: issue list */}
-        <main className="flex-1 overflow-y-auto themed-scroll">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden themed-scroll">
           <div className="max-w-3xl mx-auto px-4 py-5 sm:px-6 sm:py-6">
 
             {/* Filter bar */}
