@@ -140,7 +140,7 @@ function MarketGroup({
   updateProperty: ReturnType<typeof useUpdateProperty>
   toggleActive: ReturnType<typeof useTogglePropertyActive>
 }) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
