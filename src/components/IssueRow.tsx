@@ -56,14 +56,17 @@ export default function IssueRow({
         'rounded-[10px] border cursor-pointer overflow-hidden transition-colors duration-150',
         isSelected
           ? 'bg-surface-hover border-haven-indigo/40 ring-1 ring-haven-indigo/30'
-          : 'bg-card-bg border-border hover:bg-surface hover:border-border/80'
+          : 'bg-card-bg border-border hover:bg-surface hover:border-border/80',
+        isOnFire && !isSelected && 'animate-glow-fire'
       )}
       style={{
         borderLeftWidth: 3,
         borderLeftColor: borderColors[issue.priority],
         boxShadow: isSelected
           ? `0 0 0 1px rgba(123,124,248,0.3), ${borderGlow[issue.priority]}`
-          : borderGlow[issue.priority],
+          : isOnFire
+            ? undefined  // CSS animation handles the glow
+            : borderGlow[issue.priority],
       }}
     >
       <div className="px-3.5 py-3">

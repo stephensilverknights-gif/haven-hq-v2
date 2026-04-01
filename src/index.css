@@ -35,6 +35,8 @@
   --radius-button: 8px;
   --radius-badge: 20px;
   --radius-input: 8px;
+
+  --animate-glow-fire: glow-fire 3s ease-in-out infinite;
 }
 
 /* Bridge Shadcn CSS variables → Tailwind v4 color tokens
@@ -85,6 +87,12 @@
   --input: 244 18% 22%;
   --ring: 240 90% 73%;
   --radius: 0.75rem;
+}
+
+/* On Fire card — slow pulsing red glow */
+@keyframes glow-fire {
+  0%, 100% { box-shadow: 0 0 6px rgba(239, 68, 68, 0.15); }
+  50%       { box-shadow: 0 0 22px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.15); }
 }
 
 /* Slim themed scrollbar — replaces the browser default grey */
