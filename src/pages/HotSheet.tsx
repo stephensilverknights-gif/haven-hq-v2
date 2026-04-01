@@ -194,7 +194,7 @@ export default function HotSheet() {
 
       <div className="flex flex-1 min-h-0">
         {/* Left: issue list */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto themed-scroll">
           <div className="max-w-3xl mx-auto px-4 py-5 sm:px-6 sm:py-6">
 
             {/* Filter bar */}

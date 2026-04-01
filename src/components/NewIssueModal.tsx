@@ -131,8 +131,8 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
             <div
               className={
                 isMobile
-                  ? 'bg-card-bg rounded-t-[16px] border border-border border-b-0 shadow-xl w-full max-h-[92vh] overflow-y-auto'
-                  : 'bg-card-bg rounded-[12px] border border-border shadow-xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto'
+                  ? 'bg-card-bg rounded-t-[16px] border border-border border-b-0 shadow-xl w-full max-h-[92vh] overflow-y-auto themed-scroll'
+                  : 'bg-card-bg rounded-[12px] border border-border shadow-xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto themed-scroll'
               }
             >
               {/* Drag handle — mobile only */}
