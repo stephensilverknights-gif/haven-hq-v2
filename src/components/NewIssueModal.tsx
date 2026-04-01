@@ -175,13 +175,7 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
                             </SelectLabel>
                             {properties.filter(p => p.market === market).map(p => (
                               <SelectItem key={p.id} value={p.id}>
-                                <span className="flex items-center gap-2">
-                                  <span
-                                    className="w-2 h-2 rounded-full shrink-0"
-                                    style={{ backgroundColor: p.color_tag }}
-                                  />
-                                  {p.name}
-                                </span>
+                                {p.name}
                               </SelectItem>
                             ))}
                             {mi < markets.length - 1 && <SelectSeparator />}

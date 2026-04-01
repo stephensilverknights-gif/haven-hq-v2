@@ -1,10 +1,17 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Pencil, Trash2, GripVertical, X, ChevronRight, Building2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, GripVertical, X, ChevronRight, Building2, MapPin } from 'lucide-react'
 import TopNav from '@/components/TopNav'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   useWorkflowTemplates,
   useCreateWorkflowTemplate,
@@ -17,34 +24,118 @@ import {
   useUpdateProperty,
   useTogglePropertyActive,
 } from '@/hooks/useProperties'
+import { useMarkets, useCreateMarket, useDeleteMarket } from '@/hooks/useMarkets'
 import { useAuth } from '@/contexts/AuthContext'
 import type { WorkflowTemplate, WorkflowTemplateStep, Property } from '@/lib/types'
 
-// ── Color palette for properties ──────────────────────────────────────────────
+// ── Markets section ────────────────────────────────────────────────────────────
 
-const PROPERTY_COLORS = [
-  '#5B5BD6', '#DC2626', '#D97706', '#059669',
-  '#7C3AED', '#0891B2', '#DB2777', '#EA580C',
-  '#16A34A', '#2563EB', '#64748B', '#92400E',
-]
+function MarketsSection() {
+  const { data: markets } = useMarkets()
+  const { data: allProperties } = useAllProperties()
+  const createMarket = useCreateMarket()
+  const deleteMarket = useDeleteMarket()
+  const [newName, setNewName] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
-function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  const propertiesPerMarket = (marketName: string) =>
+    allProperties?.filter((p) => p.market === marketName).length ?? 0
+
+  const handleAdd = async () => {
+    const trimmed = newName.trim()
+    if (!trimmed) return
+    await createMarket.mutateAsync(trimmed)
+    setNewName('')
+  }
+
   return (
-    <div className="flex flex-wrap gap-2">
-      {PROPERTY_COLORS.map((color) => (
-        <button
-          key={color}
-          type="button"
-          onClick={() => onChange(color)}
-          className="w-6 h-6 rounded-full border-2 transition-all"
-          style={{
-            backgroundColor: color,
-            borderColor: value === color ? '#1a1a2e' : 'transparent',
-            boxShadow: value === color ? `0 0 0 2px ${color}40` : 'none',
-          }}
+    <section className="mb-10">
+      <div className="mb-4">
+        <h2 className="text-sm font-semibold text-text-primary">Markets</h2>
+        <p className="text-[13px] text-text-muted mt-0.5">
+          Markets group your properties. Select from this list when adding a property.
+        </p>
+      </div>
+
+      {/* Add market input */}
+      <div className="flex gap-2 mb-4">
+        <Input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+          placeholder="e.g. North Idaho"
+          className="rounded-[8px] text-sm flex-1"
         />
-      ))}
-    </div>
+        <Button
+          size="sm"
+          onClick={handleAdd}
+          disabled={!newName.trim() || createMarket.isPending}
+          className="rounded-[8px] gap-1.5 shrink-0"
+          style={{ backgroundColor: '#5B5BD6' }}
+        >
+          <Plus size={14} strokeWidth={1.5} />
+          Add
+        </Button>
+      </div>
+
+      {/* Market list */}
+      {markets && markets.length > 0 ? (
+        <div className="space-y-2">
+          {markets.map((market) => {
+            const count = propertiesPerMarket(market.name)
+            return (
+              <div
+                key={market.id}
+                className="bg-card-bg border border-border rounded-[10px] px-4 py-3 flex items-center gap-3"
+              >
+                <MapPin size={14} strokeWidth={1.5} className="text-text-muted shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-semibold text-text-primary">{market.name}</p>
+                  {count > 0 && (
+                    <p className="text-[12px] text-text-muted">
+                      {count} {count === 1 ? 'property' : 'properties'}
+                    </p>
+                  )}
+                </div>
+                {confirmDeleteId === market.id ? (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={async () => {
+                        await deleteMarket.mutateAsync(market.id)
+                        setConfirmDeleteId(null)
+                      }}
+                      className="text-[12px] font-medium text-red-500 hover:text-red-600 px-2 py-1 rounded-[6px] transition-colors"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="text-[12px] text-text-muted hover:text-text-secondary px-1 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteId(market.id)}
+                    disabled={count > 0}
+                    title={count > 0 ? 'Reassign properties before deleting' : 'Delete market'}
+                    className="shrink-0 w-7 h-7 flex items-center justify-center text-text-muted hover:text-red-500 disabled:opacity-25 disabled:cursor-not-allowed transition-colors rounded-[6px] hover:bg-red-500/10"
+                  >
+                    <Trash2 size={13} strokeWidth={1.5} />
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="border border-dashed border-border rounded-[12px] py-8 text-center">
+          <MapPin size={22} strokeWidth={1} className="text-text-muted mx-auto mb-2 opacity-40" />
+          <p className="text-sm text-text-muted">No markets yet — add one above</p>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -57,18 +148,18 @@ function PropertyForm({
   isSaving,
 }: {
   initial?: Property
-  onSave: (name: string, market: string, color_tag: string) => void
+  onSave: (name: string, market: string) => void
   onCancel: () => void
   isSaving: boolean
 }) {
+  const { data: markets } = useMarkets()
   const [name, setName] = useState(initial?.name ?? '')
   const [market, setMarket] = useState(initial?.market ?? '')
-  const [color, setColor] = useState(initial?.color_tag ?? PROPERTY_COLORS[0])
 
-  const valid = name.trim().length > 0 && market.trim().length > 0
+  const valid = name.trim().length > 0 && market.length > 0
 
   return (
-    <div className="bg-zinc-50 border border-zinc-200 rounded-[12px] p-4 space-y-3">
+    <div className="bg-surface border border-border rounded-[12px] p-4 space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
@@ -86,24 +177,30 @@ function PropertyForm({
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
             Market
           </label>
-          <Input
-            value={market}
-            onChange={(e) => setMarket(e.target.value)}
-            placeholder="e.g. North Idaho"
-            className="rounded-[8px] text-sm"
-          />
+          {markets && markets.length > 0 ? (
+            <Select value={market} onValueChange={setMarket}>
+              <SelectTrigger className="rounded-[8px] text-sm min-h-[40px]">
+                <SelectValue placeholder="Select market" />
+              </SelectTrigger>
+              <SelectContent>
+                {markets.map((m) => (
+                  <SelectItem key={m.id} value={m.name}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <p className="text-[13px] text-text-muted pt-2">
+              Add a market above first.
+            </p>
+          )}
         </div>
-      </div>
-      <div>
-        <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 block">
-          Color
-        </label>
-        <ColorPicker value={color} onChange={setColor} />
       </div>
       <div className="flex gap-2 pt-1">
         <Button
           size="sm"
-          onClick={() => onSave(name.trim(), market.trim(), color)}
+          onClick={() => onSave(name.trim(), market)}
           disabled={!valid || isSaving}
           className="rounded-[8px]"
           style={{ backgroundColor: '#5B5BD6' }}
@@ -133,10 +230,6 @@ function PropertyRow({
 }) {
   return (
     <div className={`bg-card-bg border border-border rounded-[12px] px-4 py-3 flex items-center gap-3 ${!property.active ? 'opacity-50' : ''}`}>
-      <span
-        className="w-3 h-3 rounded-full shrink-0"
-        style={{ backgroundColor: property.color_tag }}
-      />
       <div className="flex-1 min-w-0">
         <p className="text-[14px] font-semibold text-text-primary leading-tight">{property.name}</p>
         <p className="text-[12px] text-text-muted">{property.market}</p>
@@ -147,7 +240,7 @@ function PropertyRow({
           onClick={onToggleActive}
           disabled={isToggling}
           className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none ${
-            property.active ? 'bg-haven-indigo' : 'bg-zinc-300'
+            property.active ? 'bg-haven-indigo' : 'bg-zinc-600'
           }`}
           title={property.active ? 'Active — click to deactivate' : 'Inactive — click to activate'}
         >
@@ -159,7 +252,7 @@ function PropertyRow({
         </button>
         <button
           onClick={onEdit}
-          className="flex items-center gap-1 text-[12px] font-medium text-text-secondary hover:text-haven-indigo transition-colors px-2 py-1 rounded-[6px] hover:bg-haven-indigo/8"
+          className="flex items-center gap-1 text-[12px] font-medium text-text-secondary hover:text-haven-indigo transition-colors px-2 py-1 rounded-[6px] hover:bg-haven-indigo/10"
         >
           <Pencil size={13} strokeWidth={1.5} />
           Edit
@@ -220,20 +313,15 @@ function StepEditor({
           transition={{ duration: 0.15 }}
           className="flex items-center gap-2"
         >
-          {/* Step number */}
           <span className="text-[11px] font-semibold text-text-muted w-5 text-right shrink-0">
             {idx + 1}
           </span>
-
-          {/* Label input */}
           <Input
             value={step.label}
             onChange={(e) => updateLabel(step.id, e.target.value)}
             placeholder={`Step ${idx + 1}`}
             className="rounded-[8px] text-sm flex-1 h-9"
           />
-
-          {/* Move up/down */}
           <div className="flex flex-col gap-0.5 shrink-0">
             <button
               onClick={() => moveStep(step.id, 'up')}
@@ -250,11 +338,9 @@ function StepEditor({
               <ChevronRight size={11} strokeWidth={2} className="rotate-90" />
             </button>
           </div>
-
-          {/* Remove */}
           <button
             onClick={() => removeStep(step.id)}
-            className="shrink-0 w-7 h-7 flex items-center justify-center text-text-muted hover:text-red-500 transition-colors rounded-[6px] hover:bg-red-50"
+            className="shrink-0 w-7 h-7 flex items-center justify-center text-text-muted hover:text-red-500 transition-colors rounded-[6px] hover:bg-red-500/10"
           >
             <X size={13} strokeWidth={1.5} />
           </button>
@@ -287,14 +373,12 @@ function TemplateForm({
 }) {
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
-  const [steps, setSteps] = useState<WorkflowTemplateStep[]>(
-    initial?.steps ?? []
-  )
+  const [steps, setSteps] = useState<WorkflowTemplateStep[]>(initial?.steps ?? [])
 
   const valid = name.trim().length > 0 && steps.length > 0 && steps.every((s) => s.label.trim())
 
   return (
-    <div className="bg-zinc-50 border border-zinc-200 rounded-[12px] p-4 space-y-4">
+    <div className="bg-surface border border-border rounded-[12px] p-4 space-y-4">
       <div className="space-y-3">
         <div>
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
@@ -308,7 +392,6 @@ function TemplateForm({
             autoFocus
           />
         </div>
-
         <div>
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
             Description <span className="font-normal normal-case">(optional)</span>
@@ -341,12 +424,7 @@ function TemplateForm({
         >
           {isSaving ? 'Saving…' : initial ? 'Save Changes' : 'Create Template'}
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onCancel}
-          className="rounded-[8px]"
-        >
+        <Button size="sm" variant="outline" onClick={onCancel} className="rounded-[8px]">
           Cancel
         </Button>
       </div>
@@ -379,7 +457,7 @@ function TemplateRow({
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={onEdit}
-            className="flex items-center gap-1 text-[12px] font-medium text-text-secondary hover:text-haven-indigo transition-colors px-2 py-1 rounded-[6px] hover:bg-haven-indigo/8"
+            className="flex items-center gap-1 text-[12px] font-medium text-text-secondary hover:text-haven-indigo transition-colors px-2 py-1 rounded-[6px] hover:bg-haven-indigo/10"
           >
             <Pencil size={13} strokeWidth={1.5} />
             Edit
@@ -388,7 +466,7 @@ function TemplateRow({
             <div className="flex items-center gap-1">
               <button
                 onClick={onDelete}
-                className="text-[12px] font-medium text-red-600 hover:text-red-700 px-2 py-1 rounded-[6px] hover:bg-red-50 transition-colors"
+                className="text-[12px] font-medium text-red-500 hover:text-red-600 px-2 py-1 rounded-[6px] transition-colors"
               >
                 Confirm delete
               </button>
@@ -402,7 +480,7 @@ function TemplateRow({
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="flex items-center justify-center w-7 h-7 text-text-muted hover:text-red-500 transition-colors rounded-[6px] hover:bg-red-50"
+              className="flex items-center justify-center w-7 h-7 text-text-muted hover:text-red-500 transition-colors rounded-[6px] hover:bg-red-500/10"
             >
               <Trash2 size={13} strokeWidth={1.5} />
             </button>
@@ -410,12 +488,11 @@ function TemplateRow({
         </div>
       </div>
 
-      {/* Step preview */}
       <div className="flex flex-wrap gap-1.5 mt-3">
         {template.steps.map((step, i) => (
           <span
             key={step.id}
-            className="inline-flex items-center gap-1 text-[11px] text-text-muted bg-zinc-50 border border-zinc-200 rounded-[6px] px-2 py-0.5"
+            className="inline-flex items-center gap-1 text-[11px] text-text-muted bg-surface border border-border rounded-[6px] px-2 py-0.5"
           >
             <span className="font-semibold text-text-secondary">{i + 1}</span>
             {step.label}
@@ -447,21 +524,15 @@ export default function Settings() {
   const [creatingProperty, setCreatingProperty] = useState(false)
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null)
 
-  // Keep old aliases for existing template code
-  const creating = creatingTemplate
-  const setCreating = setCreatingTemplate
-  const editingId = editingTemplateId
-  const setEditingId = setEditingTemplateId
-
   const handleCreate = async (name: string, description: string, steps: WorkflowTemplateStep[]) => {
     if (!user) return
     await createTemplate.mutateAsync({ name, description, steps, createdBy: user.id })
-    setCreating(false)
+    setCreatingTemplate(false)
   }
 
   const handleUpdate = async (id: string, name: string, description: string, steps: WorkflowTemplateStep[]) => {
     await updateTemplate.mutateAsync({ id, name, description, steps })
-    setEditingId(null)
+    setEditingTemplateId(null)
   }
 
   const handleDelete = async (id: string) => {
@@ -473,11 +544,15 @@ export default function Settings() {
       <TopNav onNewIssue={() => {}} />
 
       <main className="max-w-3xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
-        {/* Page header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-text-primary mb-1">Settings</h1>
-          <p className="text-sm text-text-muted">Manage properties, workflow templates, and app configuration.</p>
+          <p className="text-sm text-text-muted">Manage markets, properties, workflow templates, and app configuration.</p>
         </div>
+
+        {/* Markets */}
+        <MarketsSection />
+
+        <Separator className="mb-10" />
 
         {/* Properties section */}
         <section className="mb-10">
@@ -485,7 +560,7 @@ export default function Settings() {
             <div>
               <h2 className="text-sm font-semibold text-text-primary">Properties</h2>
               <p className="text-[13px] text-text-muted mt-0.5">
-                Active properties appear in issue forms. Toggle off to hide without deleting.
+                Active properties appear in task forms. Toggle off to hide without deleting.
               </p>
             </div>
             {!creatingProperty && (
@@ -511,8 +586,8 @@ export default function Settings() {
                 className="mb-3"
               >
                 <PropertyForm
-                  onSave={async (name, market, color_tag) => {
-                    await createProperty.mutateAsync({ name, market, color_tag })
+                  onSave={async (name, market) => {
+                    await createProperty.mutateAsync({ name, market })
                     setCreatingProperty(false)
                   }}
                   onCancel={() => setCreatingProperty(false)}
@@ -534,8 +609,8 @@ export default function Settings() {
                   {editingPropertyId === property.id ? (
                     <PropertyForm
                       initial={property}
-                      onSave={async (name, market, color_tag) => {
-                        await updateProperty.mutateAsync({ id: property.id, name, market, color_tag })
+                      onSave={async (name, market) => {
+                        await updateProperty.mutateAsync({ id: property.id, name, market })
                         setEditingPropertyId(null)
                       }}
                       onCancel={() => setEditingPropertyId(null)}
@@ -553,8 +628,8 @@ export default function Settings() {
               ))}
             </div>
           ) : !creatingProperty ? (
-            <div className="border border-dashed border-zinc-300 rounded-[12px] py-8 text-center">
-              <Building2 size={22} strokeWidth={1} className="text-zinc-300 mx-auto mb-2" />
+            <div className="border border-dashed border-border rounded-[12px] py-8 text-center">
+              <Building2 size={22} strokeWidth={1} className="text-text-muted mx-auto mb-2 opacity-40" />
               <p className="text-sm text-text-muted">No properties yet</p>
             </div>
           ) : null}
@@ -568,13 +643,13 @@ export default function Settings() {
             <div>
               <h2 className="text-sm font-semibold text-text-primary">Workflow Templates</h2>
               <p className="text-[13px] text-text-muted mt-0.5">
-                Reusable step checklists that attach to issues — same process every time.
+                Reusable step checklists that attach to tasks — same process every time.
               </p>
             </div>
-            {!creating && (
+            {!creatingTemplate && (
               <Button
                 size="sm"
-                onClick={() => { setCreating(true); setEditingId(null) }}
+                onClick={() => { setCreatingTemplate(true); setEditingTemplateId(null) }}
                 className="rounded-[8px] gap-1.5 shrink-0"
                 style={{ backgroundColor: '#5B5BD6' }}
               >
@@ -584,9 +659,8 @@ export default function Settings() {
             )}
           </div>
 
-          {/* Create form */}
           <AnimatePresence>
-            {creating && (
+            {creatingTemplate && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -596,14 +670,13 @@ export default function Settings() {
               >
                 <TemplateForm
                   onSave={handleCreate}
-                  onCancel={() => setCreating(false)}
+                  onCancel={() => setCreatingTemplate(false)}
                   isSaving={createTemplate.isPending}
                 />
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Template list */}
           {isLoading && !isError ? (
             <p className="text-sm text-text-muted py-6 text-center">Loading templates…</p>
           ) : isError ? (
@@ -620,29 +693,29 @@ export default function Settings() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.18 }}
                 >
-                  {editingId === template.id ? (
+                  {editingTemplateId === template.id ? (
                     <TemplateForm
                       initial={template}
                       onSave={(name, desc, steps) => handleUpdate(template.id, name, desc, steps)}
-                      onCancel={() => setEditingId(null)}
+                      onCancel={() => setEditingTemplateId(null)}
                       isSaving={updateTemplate.isPending}
                     />
                   ) : (
                     <TemplateRow
                       template={template}
-                      onEdit={() => { setEditingId(template.id); setCreating(false) }}
+                      onEdit={() => { setEditingTemplateId(template.id); setCreatingTemplate(false) }}
                       onDelete={() => handleDelete(template.id)}
                     />
                   )}
                 </motion.div>
               ))}
             </div>
-          ) : !creating ? (
-            <div className="border border-dashed border-zinc-300 rounded-[12px] py-10 text-center">
-              <GripVertical size={24} strokeWidth={1} className="text-zinc-300 mx-auto mb-2" />
+          ) : !creatingTemplate ? (
+            <div className="border border-dashed border-border rounded-[12px] py-10 text-center">
+              <GripVertical size={24} strokeWidth={1} className="text-text-muted mx-auto mb-2 opacity-40" />
               <p className="text-sm text-text-muted">No templates yet</p>
               <p className="text-[13px] text-text-muted mt-0.5">
-                Create one to attach repeatable step checklists to issues.
+                Create one to attach repeatable step checklists to tasks.
               </p>
             </div>
           ) : null}

@@ -55,11 +55,11 @@ function invalidate(queryClient: ReturnType<typeof useQueryClient>) {
 export function useCreateProperty() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (vars: { name: string; market: string; color_tag: string }) => {
+    mutationFn: async (vars: { name: string; market: string }) => {
       const { error } = await supabase.from('properties').insert({
         name: vars.name,
         market: vars.market,
-        color_tag: vars.color_tag,
+        color_tag: '#64748B',
         active: true,
       })
       if (error) throw error
@@ -71,10 +71,10 @@ export function useCreateProperty() {
 export function useUpdateProperty() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (vars: { id: string; name: string; market: string; color_tag: string }) => {
+    mutationFn: async (vars: { id: string; name: string; market: string }) => {
       const { error } = await supabase
         .from('properties')
-        .update({ name: vars.name, market: vars.market, color_tag: vars.color_tag })
+        .update({ name: vars.name, market: vars.market })
         .eq('id', vars.id)
       if (error) throw error
     },
