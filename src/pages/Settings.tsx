@@ -1,17 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Pencil, Trash2, GripVertical, X, ChevronRight, Building2, MapPin } from 'lucide-react'
+import { Plus, Pencil, Trash2, GripVertical, X, ChevronRight, Building2, MapPin, ChevronDown, Settings2 } from 'lucide-react'
 import TopNav from '@/components/TopNav'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   useWorkflowTemplates,
   useCreateWorkflowTemplate,
@@ -27,177 +20,46 @@ import {
 import { useMarkets, useCreateMarket, useDeleteMarket } from '@/hooks/useMarkets'
 import { useAuth } from '@/contexts/AuthContext'
 import type { WorkflowTemplate, WorkflowTemplateStep, Property } from '@/lib/types'
-
-// ── Markets section ────────────────────────────────────────────────────────────
-
-function MarketsSection() {
-  const { data: markets } = useMarkets()
-  const { data: allProperties } = useAllProperties()
-  const createMarket = useCreateMarket()
-  const deleteMarket = useDeleteMarket()
-  const [newName, setNewName] = useState('')
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-
-  const propertiesPerMarket = (marketName: string) =>
-    allProperties?.filter((p) => p.market === marketName).length ?? 0
-
-  const handleAdd = async () => {
-    const trimmed = newName.trim()
-    if (!trimmed) return
-    await createMarket.mutateAsync(trimmed)
-    setNewName('')
-  }
-
-  return (
-    <section className="mb-10">
-      <div className="mb-4">
-        <h2 className="text-sm font-semibold text-text-primary">Markets</h2>
-        <p className="text-[13px] text-text-muted mt-0.5">
-          Markets group your properties. Select from this list when adding a property.
-        </p>
-      </div>
-
-      {/* Add market input */}
-      <div className="flex gap-2 mb-4">
-        <Input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
-          placeholder="e.g. North Idaho"
-          className="rounded-[8px] text-sm flex-1"
-        />
-        <Button
-          size="sm"
-          onClick={handleAdd}
-          disabled={!newName.trim() || createMarket.isPending}
-          className="rounded-[8px] gap-1.5 shrink-0"
-          style={{ backgroundColor: '#5B5BD6' }}
-        >
-          <Plus size={14} strokeWidth={1.5} />
-          Add
-        </Button>
-      </div>
-
-      {/* Market list */}
-      {markets && markets.length > 0 ? (
-        <div className="space-y-2">
-          {markets.map((market) => {
-            const count = propertiesPerMarket(market.name)
-            return (
-              <div
-                key={market.id}
-                className="bg-card-bg border border-border rounded-[10px] px-4 py-3 flex items-center gap-3"
-              >
-                <MapPin size={14} strokeWidth={1.5} className="text-text-muted shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold text-text-primary">{market.name}</p>
-                  {count > 0 && (
-                    <p className="text-[12px] text-text-muted">
-                      {count} {count === 1 ? 'property' : 'properties'}
-                    </p>
-                  )}
-                </div>
-                {confirmDeleteId === market.id ? (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={async () => {
-                        await deleteMarket.mutateAsync(market.id)
-                        setConfirmDeleteId(null)
-                      }}
-                      className="text-[12px] font-medium text-red-500 hover:text-red-600 px-2 py-1 rounded-[6px] transition-colors"
-                    >
-                      Delete
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteId(null)}
-                      className="text-[12px] text-text-muted hover:text-text-secondary px-1 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmDeleteId(market.id)}
-                    disabled={count > 0}
-                    title={count > 0 ? 'Reassign properties before deleting' : 'Delete market'}
-                    className="shrink-0 w-7 h-7 flex items-center justify-center text-text-muted hover:text-red-500 disabled:opacity-25 disabled:cursor-not-allowed transition-colors rounded-[6px] hover:bg-red-500/10"
-                  >
-                    <Trash2 size={13} strokeWidth={1.5} />
-                  </button>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="border border-dashed border-border rounded-[12px] py-8 text-center">
-          <MapPin size={22} strokeWidth={1} className="text-text-muted mx-auto mb-2 opacity-40" />
-          <p className="text-sm text-text-muted">No markets yet — add one above</p>
-        </div>
-      )}
-    </section>
-  )
-}
+import { cn } from '@/lib/utils'
 
 // ── Property form (create / edit) ─────────────────────────────────────────────
 
 function PropertyForm({
   initial,
+  lockedMarket,
   onSave,
   onCancel,
   isSaving,
 }: {
   initial?: Property
+  lockedMarket?: string
   onSave: (name: string, market: string) => void
   onCancel: () => void
   isSaving: boolean
 }) {
-  const { data: markets } = useMarkets()
   const [name, setName] = useState(initial?.name ?? '')
-  const [market, setMarket] = useState(initial?.market ?? '')
+  const market = lockedMarket ?? initial?.market ?? ''
 
   const valid = name.trim().length > 0 && market.length > 0
 
   return (
-    <div className="bg-surface border border-border rounded-[12px] p-4 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+    <div className="bg-surface border border-border rounded-[10px] p-3 space-y-3">
+      <div className="flex gap-3 items-end">
+        <div className="flex-1">
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
             Property Name
           </label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && valid && !isSaving) onSave(name.trim(), market) }}
             placeholder="e.g. Sherman Arms"
             className="rounded-[8px] text-sm"
             autoFocus
           />
         </div>
-        <div>
-          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
-            Market
-          </label>
-          {markets && markets.length > 0 ? (
-            <Select value={market} onValueChange={setMarket}>
-              <SelectTrigger className="rounded-[8px] text-sm min-h-[40px]">
-                <SelectValue placeholder="Select market" />
-              </SelectTrigger>
-              <SelectContent>
-                {markets.map((m) => (
-                  <SelectItem key={m.id} value={m.name}>
-                    {m.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <p className="text-[13px] text-text-muted pt-2">
-              Add a market above first.
-            </p>
-          )}
-        </div>
       </div>
-      <div className="flex gap-2 pt-1">
+      <div className="flex gap-2">
         <Button
           size="sm"
           onClick={() => onSave(name.trim(), market)}
@@ -205,7 +67,7 @@ function PropertyForm({
           className="rounded-[8px]"
           style={{ backgroundColor: '#5B5BD6' }}
         >
-          {isSaving ? 'Saving…' : initial ? 'Save Changes' : 'Add Property'}
+          {isSaving ? 'Saving…' : initial ? 'Save' : 'Add Property'}
         </Button>
         <Button size="sm" variant="outline" onClick={onCancel} className="rounded-[8px]">
           Cancel
@@ -229,35 +91,275 @@ function PropertyRow({
   isToggling: boolean
 }) {
   return (
-    <div className={`bg-card-bg border border-border rounded-[12px] px-4 py-3 flex items-center gap-3 ${!property.active ? 'opacity-50' : ''}`}>
+    <div className={cn(
+      'bg-card-bg border border-border rounded-[10px] px-3 py-2.5 flex items-center gap-3',
+      !property.active && 'opacity-40'
+    )}>
       <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold text-text-primary leading-tight">{property.name}</p>
-        <p className="text-[12px] text-text-muted">{property.market}</p>
+        <p className="text-[13px] font-semibold text-text-primary leading-tight truncate">{property.name}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        {/* Active toggle */}
         <button
           onClick={onToggleActive}
           disabled={isToggling}
-          className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none ${
+          className={cn(
+            'relative w-8 h-[18px] rounded-full transition-colors duration-200 focus:outline-none shrink-0',
             property.active ? 'bg-haven-indigo' : 'bg-zinc-600'
-          }`}
+          )}
           title={property.active ? 'Active — click to deactivate' : 'Inactive — click to activate'}
         >
-          <span
-            className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
-              property.active ? 'translate-x-4' : 'translate-x-0'
-            }`}
-          />
+          <span className={cn(
+            'absolute top-0.5 left-0.5 w-[14px] h-[14px] bg-white rounded-full shadow transition-transform duration-200',
+            property.active ? 'translate-x-[14px]' : 'translate-x-0'
+          )} />
         </button>
         <button
           onClick={onEdit}
           className="flex items-center gap-1 text-[12px] font-medium text-text-secondary hover:text-haven-indigo transition-colors px-2 py-1 rounded-[6px] hover:bg-haven-indigo/10"
         >
-          <Pencil size={13} strokeWidth={1.5} />
+          <Pencil size={12} strokeWidth={1.5} />
           Edit
         </button>
       </div>
+    </div>
+  )
+}
+
+// ── Market group (collapsible) ─────────────────────────────────────────────────
+
+function MarketGroup({
+  marketName,
+  properties,
+  createProperty,
+  updateProperty,
+  toggleActive,
+}: {
+  marketName: string
+  properties: Property[]
+  createProperty: ReturnType<typeof useCreateProperty>
+  updateProperty: ReturnType<typeof useUpdateProperty>
+  toggleActive: ReturnType<typeof useTogglePropertyActive>
+}) {
+  const [open, setOpen] = useState(true)
+  const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+
+  const activeCount = properties.filter(p => p.active).length
+
+  return (
+    <div className="border border-border rounded-[12px] overflow-hidden">
+      {/* Header */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-4 py-3 bg-surface hover:bg-surface-hover transition-colors text-left"
+      >
+        <ChevronDown
+          size={15}
+          strokeWidth={2}
+          className={cn('text-text-muted transition-transform duration-200 shrink-0', !open && '-rotate-90')}
+        />
+        <MapPin size={14} strokeWidth={1.5} className="text-text-muted shrink-0" />
+        <span className="text-[13px] font-semibold text-text-primary flex-1">{marketName}</span>
+        <span className="text-[11px] text-text-muted font-medium shrink-0">
+          {activeCount}/{properties.length} active
+        </span>
+      </button>
+
+      {/* Body */}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 pb-3 pt-2 space-y-1.5 border-t border-border">
+              {properties.map((property) => (
+                <div key={property.id}>
+                  {editingId === property.id ? (
+                    <PropertyForm
+                      initial={property}
+                      lockedMarket={marketName}
+                      onSave={async (name, market) => {
+                        await updateProperty.mutateAsync({ id: property.id, name, market })
+                        setEditingId(null)
+                      }}
+                      onCancel={() => setEditingId(null)}
+                      isSaving={updateProperty.isPending}
+                    />
+                  ) : (
+                    <PropertyRow
+                      property={property}
+                      onEdit={() => { setEditingId(property.id); setAdding(false) }}
+                      onToggleActive={() => toggleActive.mutate({ id: property.id, active: !property.active })}
+                      isToggling={toggleActive.isPending}
+                    />
+                  )}
+                </div>
+              ))}
+
+              {/* Add property form */}
+              <AnimatePresence>
+                {adding && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <PropertyForm
+                      lockedMarket={marketName}
+                      onSave={async (name, market) => {
+                        await createProperty.mutateAsync({ name, market })
+                        setAdding(false)
+                      }}
+                      onCancel={() => setAdding(false)}
+                      isSaving={createProperty.isPending}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {!adding && !editingId && (
+                <button
+                  onClick={() => setAdding(true)}
+                  className="flex items-center gap-1.5 text-[12px] font-medium text-text-muted hover:text-haven-indigo transition-colors px-1 py-1 mt-0.5"
+                >
+                  <Plus size={13} strokeWidth={2} />
+                  Add property
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ── Manage Markets accordion ───────────────────────────────────────────────────
+
+function ManageMarkets({ allProperties }: { allProperties: Property[] | undefined }) {
+  const [open, setOpen] = useState(false)
+  const { data: markets } = useMarkets()
+  const createMarket = useCreateMarket()
+  const deleteMarket = useDeleteMarket()
+  const [newName, setNewName] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
+  const propertiesPerMarket = (marketName: string) =>
+    allProperties?.filter((p) => p.market === marketName).length ?? 0
+
+  const handleAdd = async () => {
+    const trimmed = newName.trim()
+    if (!trimmed) return
+    await createMarket.mutateAsync(trimmed)
+    setNewName('')
+  }
+
+  return (
+    <div className="border border-border rounded-[12px] overflow-hidden mb-4">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2.5 px-4 py-3 bg-surface hover:bg-surface-hover transition-colors text-left"
+      >
+        <Settings2 size={14} strokeWidth={1.5} className="text-text-muted shrink-0" />
+        <span className="text-[13px] font-semibold text-text-primary flex-1">Manage Markets</span>
+        <ChevronDown
+          size={14}
+          strokeWidth={2}
+          className={cn('text-text-muted transition-transform duration-200 shrink-0', !open && '-rotate-90')}
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 py-3 space-y-3 border-t border-border">
+              {/* Add input */}
+              <div className="flex gap-2">
+                <Input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+                  placeholder="New market name…"
+                  className="rounded-[8px] text-sm flex-1 h-9"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleAdd}
+                  disabled={!newName.trim() || createMarket.isPending}
+                  className="rounded-[8px] gap-1 shrink-0 h-9"
+                  style={{ backgroundColor: '#5B5BD6' }}
+                >
+                  <Plus size={13} strokeWidth={1.5} />
+                  Add
+                </Button>
+              </div>
+
+              {/* Market list */}
+              {markets && markets.length > 0 ? (
+                <div className="space-y-1.5">
+                  {markets.map((market) => {
+                    const count = propertiesPerMarket(market.name)
+                    return (
+                      <div
+                        key={market.id}
+                        className="flex items-center gap-2 bg-card-bg border border-border rounded-[8px] px-3 py-2"
+                      >
+                        <span className="flex-1 text-[13px] font-medium text-text-primary">{market.name}</span>
+                        {count > 0 && (
+                          <span className="text-[11px] text-text-muted shrink-0">
+                            {count} {count === 1 ? 'property' : 'properties'}
+                          </span>
+                        )}
+                        {confirmDeleteId === market.id ? (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={async () => {
+                                await deleteMarket.mutateAsync(market.id)
+                                setConfirmDeleteId(null)
+                              }}
+                              className="text-[11px] font-medium text-red-500 hover:text-red-600 transition-colors"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(market.id)}
+                            disabled={count > 0}
+                            title={count > 0 ? 'Reassign properties before deleting' : 'Delete market'}
+                            className="shrink-0 w-6 h-6 flex items-center justify-center text-text-muted hover:text-red-500 disabled:opacity-20 disabled:cursor-not-allowed transition-colors rounded-[4px] hover:bg-red-500/10"
+                          >
+                            <Trash2 size={12} strokeWidth={1.5} />
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-[13px] text-text-muted text-center py-2">No markets yet</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -285,11 +387,7 @@ function StepEditor({
   }
 
   const removeStep = (id: string) => {
-    onChange(
-      steps
-        .filter((s) => s.id !== id)
-        .map((s, i) => ({ ...s, order: i }))
-    )
+    onChange(steps.filter((s) => s.id !== id).map((s, i) => ({ ...s, order: i })))
   }
 
   const moveStep = (id: string, direction: 'up' | 'down') => {
@@ -313,9 +411,7 @@ function StepEditor({
           transition={{ duration: 0.15 }}
           className="flex items-center gap-2"
         >
-          <span className="text-[11px] font-semibold text-text-muted w-5 text-right shrink-0">
-            {idx + 1}
-          </span>
+          <span className="text-[11px] font-semibold text-text-muted w-5 text-right shrink-0">{idx + 1}</span>
           <Input
             value={step.label}
             onChange={(e) => updateLabel(step.id, e.target.value)}
@@ -346,7 +442,6 @@ function StepEditor({
           </button>
         </motion.div>
       ))}
-
       <button
         onClick={addStep}
         className="flex items-center gap-1.5 text-[13px] text-haven-indigo hover:text-haven-indigo/80 font-medium transition-colors mt-1"
@@ -404,16 +499,13 @@ function TemplateForm({
           />
         </div>
       </div>
-
       <Separator />
-
       <div>
         <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3 block">
           Steps
         </label>
         <StepEditor steps={steps} onChange={setSteps} />
       </div>
-
       <div className="flex gap-2 pt-1">
         <Button
           size="sm"
@@ -487,7 +579,6 @@ function TemplateRow({
           )}
         </div>
       </div>
-
       <div className="flex flex-wrap gap-1.5 mt-3">
         {template.steps.map((step, i) => (
           <span
@@ -508,7 +599,6 @@ function TemplateRow({
 export default function Settings() {
   const { user } = useAuth()
 
-  // Templates
   const { data: templates, isLoading, isError, refetch } = useWorkflowTemplates()
   const createTemplate = useCreateWorkflowTemplate()
   const updateTemplate = useUpdateWorkflowTemplate()
@@ -516,13 +606,27 @@ export default function Settings() {
   const [creatingTemplate, setCreatingTemplate] = useState(false)
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
 
-  // Properties
   const { data: allProperties } = useAllProperties()
+  const { data: markets } = useMarkets()
   const createProperty = useCreateProperty()
   const updateProperty = useUpdateProperty()
   const toggleActive = useTogglePropertyActive()
-  const [creatingProperty, setCreatingProperty] = useState(false)
-  const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null)
+
+  // Group properties by market, preserving market order
+  const groupedByMarket = useMemo(() => {
+    if (!markets || !allProperties) return []
+    const groups = markets.map((m) => ({
+      marketName: m.name,
+      properties: allProperties.filter((p) => p.market === m.name),
+    }))
+    // Any properties with a market not in the markets list
+    const knownMarkets = new Set(markets.map((m) => m.name))
+    const orphaned = allProperties.filter((p) => !knownMarkets.has(p.market))
+    if (orphaned.length > 0) {
+      groups.push({ marketName: 'Other', properties: orphaned })
+    }
+    return groups
+  }, [markets, allProperties])
 
   const handleCreate = async (name: string, description: string, steps: WorkflowTemplateStep[]) => {
     if (!user) return
@@ -546,13 +650,8 @@ export default function Settings() {
       <main className="max-w-3xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-text-primary mb-1">Settings</h1>
-          <p className="text-sm text-text-muted">Manage markets, properties, workflow templates, and app configuration.</p>
+          <p className="text-sm text-text-muted">Manage markets, properties, and workflow templates.</p>
         </div>
-
-        {/* Markets */}
-        <MarketsSection />
-
-        <Separator className="mb-10" />
 
         {/* Properties section */}
         <section className="mb-10">
@@ -560,79 +659,34 @@ export default function Settings() {
             <div>
               <h2 className="text-sm font-semibold text-text-primary">Properties</h2>
               <p className="text-[13px] text-text-muted mt-0.5">
-                Active properties appear in task forms. Toggle off to hide without deleting.
+                Grouped by market. Toggle off to hide a property without deleting it.
               </p>
             </div>
-            {!creatingProperty && (
-              <Button
-                size="sm"
-                onClick={() => { setCreatingProperty(true); setEditingPropertyId(null) }}
-                className="rounded-[8px] gap-1.5 shrink-0"
-                style={{ backgroundColor: '#5B5BD6' }}
-              >
-                <Plus size={14} strokeWidth={1.5} />
-                Add Property
-              </Button>
-            )}
           </div>
 
-          <AnimatePresence>
-            {creatingProperty && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.18 }}
-                className="mb-3"
-              >
-                <PropertyForm
-                  onSave={async (name, market) => {
-                    await createProperty.mutateAsync({ name, market })
-                    setCreatingProperty(false)
-                  }}
-                  onCancel={() => setCreatingProperty(false)}
-                  isSaving={createProperty.isPending}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Manage Markets accordion */}
+          <ManageMarkets allProperties={allProperties} />
 
-          {allProperties && allProperties.length > 0 ? (
+          {/* Market groups */}
+          {groupedByMarket.length > 0 ? (
             <div className="space-y-2">
-              {allProperties.map((property) => (
-                <motion.div
-                  key={property.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.18 }}
-                >
-                  {editingPropertyId === property.id ? (
-                    <PropertyForm
-                      initial={property}
-                      onSave={async (name, market) => {
-                        await updateProperty.mutateAsync({ id: property.id, name, market })
-                        setEditingPropertyId(null)
-                      }}
-                      onCancel={() => setEditingPropertyId(null)}
-                      isSaving={updateProperty.isPending}
-                    />
-                  ) : (
-                    <PropertyRow
-                      property={property}
-                      onEdit={() => { setEditingPropertyId(property.id); setCreatingProperty(false) }}
-                      onToggleActive={() => toggleActive.mutate({ id: property.id, active: !property.active })}
-                      isToggling={toggleActive.isPending}
-                    />
-                  )}
-                </motion.div>
+              {groupedByMarket.map(({ marketName, properties }) => (
+                <MarketGroup
+                  key={marketName}
+                  marketName={marketName}
+                  properties={properties}
+                  createProperty={createProperty}
+                  updateProperty={updateProperty}
+                  toggleActive={toggleActive}
+                />
               ))}
             </div>
-          ) : !creatingProperty ? (
-            <div className="border border-dashed border-border rounded-[12px] py-8 text-center">
+          ) : (
+            <div className="border border-dashed border-border rounded-[12px] py-10 text-center">
               <Building2 size={22} strokeWidth={1} className="text-text-muted mx-auto mb-2 opacity-40" />
-              <p className="text-sm text-text-muted">No properties yet</p>
+              <p className="text-sm text-text-muted">Add a market above, then add properties to it</p>
             </div>
-          ) : null}
+          )}
         </section>
 
         <Separator className="mb-10" />
