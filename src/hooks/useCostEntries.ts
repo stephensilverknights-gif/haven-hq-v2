@@ -46,6 +46,48 @@ export function useAllCostEntries() {
   })
 }
 
+export function useUpdateCostEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      id: string
+      issue_id: string
+      amount: number
+      vendor_name?: string
+      description: string
+      reimbursable: Reimbursable
+    }) => {
+      const { id, issue_id, ...updates } = input
+      const { error } = await supabase
+        .from('cost_entries')
+        .update(updates)
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['costEntries', variables.issue_id] })
+      queryClient.invalidateQueries({ queryKey: ['allCostEntries'] })
+    },
+  })
+}
+
+export function useDeleteCostEntry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { id: string; issue_id: string }) => {
+      const { error } = await supabase
+        .from('cost_entries')
+        .delete()
+        .eq('id', input.id)
+      if (error) throw error
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['costEntries', variables.issue_id] })
+      queryClient.invalidateQueries({ queryKey: ['allCostEntries'] })
+    },
+  })
+}
+
 export function useAddCostEntry() {
   const queryClient = useQueryClient()
 

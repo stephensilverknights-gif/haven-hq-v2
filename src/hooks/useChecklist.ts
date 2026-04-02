@@ -68,6 +68,23 @@ export function useToggleChecklistItem() {
   })
 }
 
+export function useDeleteChecklist() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (issueId: string) => {
+      const { error } = await supabase
+        .from('issue_checklist_items')
+        .delete()
+        .eq('issue_id', issueId)
+      if (error) throw error
+    },
+    onSuccess: (_data, issueId) => {
+      queryClient.invalidateQueries({ queryKey: ['checklist', issueId] })
+      queryClient.invalidateQueries({ queryKey: ['checklistProgress'] })
+    },
+  })
+}
+
 export function useApplyTemplate() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { format } from 'date-fns'
-import { DollarSign } from 'lucide-react'
+import { DollarSign, ArrowUp, ArrowDown } from 'lucide-react'
 import TopNav from '@/components/TopNav'
 import UserAvatar from '@/components/UserAvatar'
 import {
@@ -13,10 +13,31 @@ import {
 } from '@/components/ui/table'
 import { useAllCostEntries } from '@/hooks/useCostEntries'
 import { REIMBURSABLE_LABELS } from '@/lib/types'
-import type { Reimbursable } from '@/lib/types'
+import type { CostEntry, Reimbursable } from '@/lib/types'
+import { cn } from '@/lib/utils'
+
+type SortField = 'date' | 'property' | 'amount' | 'reimbursable' | 'logged_by'
+type SortDir = 'asc' | 'desc'
+
+function getSortValue(entry: CostEntry, field: SortField): string | number {
+  switch (field) {
+    case 'date':
+      return entry.date
+    case 'property':
+      return (entry.issue?.property?.name ?? '').toLowerCase()
+    case 'amount':
+      return Number(entry.amount)
+    case 'reimbursable':
+      return entry.reimbursable
+    case 'logged_by':
+      return (entry.logger?.name ?? '').toLowerCase()
+  }
+}
 
 export default function CostsView() {
   const { data: entries, isLoading } = useAllCostEntries()
+  const [sortField, setSortField] = useState<SortField>('date')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   const summary = useMemo(() => {
     if (!entries) return { total: 0, reimbursable: 0 }
@@ -26,6 +47,31 @@ export default function CostsView() {
       .reduce((sum, e) => sum + Number(e.amount), 0)
     return { total, reimbursable }
   }, [entries])
+
+  const sortedEntries = useMemo(() => {
+    if (!entries) return []
+    return [...entries].sort((a, b) => {
+      const aVal = getSortValue(a, sortField)
+      const bVal = getSortValue(b, sortField)
+      const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [entries, sortField, sortDir])
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDir(field === 'amount' ? 'desc' : 'asc')
+    }
+  }
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return null
+    const Icon = sortDir === 'asc' ? ArrowUp : ArrowDown
+    return <Icon size={11} strokeWidth={2} className="inline ml-0.5 text-haven-indigo" />
+  }
 
   return (
     <div className="min-h-screen bg-page-bg">
@@ -66,17 +112,42 @@ export default function CostsView() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Date</TableHead>
-                  <TableHead className="text-xs">Property</TableHead>
+                  <TableHead
+                    className={cn('text-xs cursor-pointer select-none hover:text-text-primary transition-colors', sortField === 'date' && 'text-haven-indigo')}
+                    onClick={() => toggleSort('date')}
+                  >
+                    Date<SortIcon field="date" />
+                  </TableHead>
+                  <TableHead
+                    className={cn('text-xs cursor-pointer select-none hover:text-text-primary transition-colors', sortField === 'property' && 'text-haven-indigo')}
+                    onClick={() => toggleSort('property')}
+                  >
+                    Property<SortIcon field="property" />
+                  </TableHead>
                   <TableHead className="text-xs">Issue</TableHead>
                   <TableHead className="text-xs hidden sm:table-cell">Vendor</TableHead>
-                  <TableHead className="text-xs text-right">Amount</TableHead>
-                  <TableHead className="text-xs">Reimbursable</TableHead>
-                  <TableHead className="text-xs hidden sm:table-cell">Logged By</TableHead>
+                  <TableHead
+                    className={cn('text-xs text-right cursor-pointer select-none hover:text-text-primary transition-colors', sortField === 'amount' && 'text-haven-indigo')}
+                    onClick={() => toggleSort('amount')}
+                  >
+                    Amount<SortIcon field="amount" />
+                  </TableHead>
+                  <TableHead
+                    className={cn('text-xs cursor-pointer select-none hover:text-text-primary transition-colors', sortField === 'reimbursable' && 'text-haven-indigo')}
+                    onClick={() => toggleSort('reimbursable')}
+                  >
+                    Reimbursable<SortIcon field="reimbursable" />
+                  </TableHead>
+                  <TableHead
+                    className={cn('text-xs hidden sm:table-cell cursor-pointer select-none hover:text-text-primary transition-colors', sortField === 'logged_by' && 'text-haven-indigo')}
+                    onClick={() => toggleSort('logged_by')}
+                  >
+                    Logged By<SortIcon field="logged_by" />
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {entries.map((entry) => (
+                {sortedEntries.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell className="text-sm">
                       {format(new Date(entry.date), 'MMM d')}

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { DollarSign, Plus, Receipt, ArrowDownLeft, ArrowUpRight, Building, Wallet } from 'lucide-react'
+import { DollarSign, Plus, Receipt, ArrowDownLeft, ArrowUpRight, Building, Wallet, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import UserAvatar from '@/components/UserAvatar'
-import { useCostEntries, useAddCostEntry } from '@/hooks/useCostEntries'
+import { useCostEntries, useAddCostEntry, useUpdateCostEntry, useDeleteCostEntry } from '@/hooks/useCostEntries'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import type { Reimbursable } from '@/lib/types'
@@ -68,8 +68,12 @@ export default function CostEntry({ issueId }: CostEntryProps) {
   const { user } = useAuth()
   const { data: entries, isLoading } = useCostEntries(issueId)
   const addCost = useAddCostEntry()
+  const updateCost = useUpdateCostEntry()
+  const deleteCost = useDeleteCostEntry()
 
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [entryType, setEntryType] = useState<Reimbursable>('none')
   const [amount, setAmount] = useState('')
   const [vendor, setVendor] = useState('')
@@ -83,10 +87,35 @@ export default function CostEntry({ issueId }: CostEntryProps) {
     setDescription('')
     setReceiptFile(null)
     setShowForm(false)
+    setEditingId(null)
+  }
+
+  const startEdit = (entry: { id: string; amount: number; vendor_name?: string | null; description: string; reimbursable: Reimbursable }) => {
+    setEditingId(entry.id)
+    setAmount(String(entry.amount))
+    setVendor(entry.vendor_name ?? '')
+    setDescription(entry.description)
+    setEntryType(entry.reimbursable)
+    setReceiptFile(null)
+    setShowForm(true)
+    setConfirmDeleteId(null)
   }
 
   const handleSubmit = async () => {
     if (!amount || !description.trim() || !user) return
+
+    if (editingId) {
+      await updateCost.mutateAsync({
+        id: editingId,
+        issue_id: issueId,
+        amount: parseFloat(amount),
+        vendor_name: vendor.trim() || undefined,
+        description: description.trim(),
+        reimbursable: entryType,
+      })
+      resetForm()
+      return
+    }
 
     let receiptUrl: string | undefined
 
@@ -119,6 +148,7 @@ export default function CostEntry({ issueId }: CostEntryProps) {
   }
 
   const total = entries?.reduce((sum, e) => sum + Number(e.amount), 0) ?? 0
+  const isSaving = addCost.isPending || updateCost.isPending
   const canSubmit = !!amount && parseFloat(amount) > 0 && description.trim().length > 0
 
   return (
@@ -241,11 +271,11 @@ export default function CostEntry({ issueId }: CostEntryProps) {
             <Button
               size="sm"
               onClick={handleSubmit}
-              disabled={!canSubmit || addCost.isPending}
+              disabled={!canSubmit || isSaving}
               className="rounded-[8px] min-h-[44px] sm:min-h-0"
               style={{ backgroundColor: '#7B7CF8' }}
             >
-              {addCost.isPending ? 'Saving…' : 'Save Entry'}
+              {isSaving ? 'Saving…' : editingId ? 'Update Entry' : 'Save Entry'}
             </Button>
             <Button
               size="sm"
@@ -300,9 +330,48 @@ export default function CostEntry({ issueId }: CostEntryProps) {
                     </a>
                   )}
                 </div>
-                {entry.logger && (
-                  <UserAvatar initials={entry.logger.initials} size="sm" className="shrink-0 mt-0.5" />
-                )}
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  {entry.logger && (
+                    <UserAvatar initials={entry.logger.initials} size="sm" />
+                  )}
+                  {confirmDeleteId === entry.id ? (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-text-muted">Delete?</span>
+                      <button
+                        onClick={async () => {
+                          await deleteCost.mutateAsync({ id: entry.id, issue_id: issueId })
+                          setConfirmDeleteId(null)
+                        }}
+                        className="text-[10px] font-medium text-red-500 hover:text-red-600 px-1 py-0.5 rounded-[4px] hover:bg-red-500/10 transition-colors"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="text-[10px] font-medium text-text-muted hover:text-text-secondary px-1 py-0.5 rounded-[4px] hover:bg-surface-hover transition-colors"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        onClick={() => startEdit(entry)}
+                        className="p-1 rounded-[4px] text-text-muted hover:text-haven-indigo hover:bg-haven-indigo/10 transition-colors"
+                        title="Edit"
+                      >
+                        <Pencil size={11} strokeWidth={1.5} />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(entry.id)}
+                        className="p-1 rounded-[4px] text-text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={11} strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )
           })}

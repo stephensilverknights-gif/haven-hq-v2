@@ -157,26 +157,29 @@ export default function HotSheet() {
 
   const { data: progressMap = {} } = useChecklistProgressMap()
 
+  const showingResolved = filterPriority === 'resolved'
+
   // Apply filters to active issues
   const filteredIssues = useMemo(() => {
+    if (showingResolved) return []
     return issues.filter((issue) => {
       if (filterPriority !== 'all' && issue.priority !== filterPriority) return false
       if (filterType !== 'all' && issue.type !== filterType) return false
       if (filterProperty !== 'all' && issue.property_id !== filterProperty) return false
       return true
     })
-  }, [issues, filterPriority, filterType, filterProperty])
+  }, [issues, filterPriority, filterType, filterProperty, showingResolved])
 
   // Apply same filters to resolved
   const resolvedIssues = useMemo(() => {
     return allIssues.filter((issue) => {
       if (issue.status !== 'resolved') return false
-      if (filterPriority !== 'all' && issue.priority !== filterPriority) return false
+      if (filterPriority !== 'all' && !showingResolved && issue.priority !== filterPriority) return false
       if (filterType !== 'all' && issue.type !== filterType) return false
       if (filterProperty !== 'all' && issue.property_id !== filterProperty) return false
       return true
     })
-  }, [allIssues, filterPriority, filterType, filterProperty])
+  }, [allIssues, filterPriority, filterType, filterProperty, showingResolved])
 
   const grouped = {
     on_fire: filteredIssues.filter((i) => i.priority === 'on_fire'),
@@ -208,6 +211,7 @@ export default function HotSheet() {
                   {(Object.entries(PRIORITY_LABELS) as [Priority, string][]).map(([value, label]) => (
                     <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
+                  <SelectItem value="resolved">Resolved</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -296,7 +300,7 @@ export default function HotSheet() {
                 )}
 
                 {/* Resolved section */}
-                {resolvedIssues.length > 0 && (
+                {resolvedIssues.length > 0 && !showingResolved && (
                   <div className={filteredIssues.length > 0 ? 'mt-8' : ''}>
                     <button
                       onClick={() => setShowResolved(!showResolved)}
@@ -333,6 +337,31 @@ export default function HotSheet() {
                         </motion.div>
                       )}
                     </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Resolved — shown prominently when "Resolved" filter is active */}
+                {showingResolved && resolvedIssues.length > 0 && (
+                  <div className="grid gap-2">
+                    <p className="text-sm font-medium text-text-secondary mb-1">
+                      Resolved ({resolvedIssues.length})
+                    </p>
+                    {resolvedIssues.map((issue) => (
+                      <IssueRow
+                        key={issue.id}
+                        issue={issue}
+                        lastNote={lastNotes[issue.id]?.note}
+                        lastNoteAuthor={lastNotes[issue.id]?.author}
+                        checklistProgress={progressMap[issue.id] ?? null}
+                        isSelected={selectedIssueId === issue.id}
+                        onClick={() => setSelectedIssueId(issue.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+                {showingResolved && resolvedIssues.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-20">
+                    <p className="text-text-muted text-sm">No resolved tasks.</p>
                   </div>
                 )}
               </>

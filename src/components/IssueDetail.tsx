@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ArrowLeft, Check, ListChecks, ChevronDown } from 'lucide-react'
+import { X, ArrowLeft, Check, ListChecks, ChevronDown, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
@@ -9,7 +9,7 @@ import PropertyBadge from '@/components/PropertyBadge'
 import ActivityLog from '@/components/ActivityLog'
 import CostEntry from '@/components/CostEntry'
 import { useUpdateIssueStatus, useUpdateIssuePriority } from '@/hooks/useIssues'
-import { useChecklist, useToggleChecklistItem, useApplyTemplate } from '@/hooks/useChecklist'
+import { useChecklist, useToggleChecklistItem, useApplyTemplate, useDeleteChecklist } from '@/hooks/useChecklist'
 import { useWorkflowTemplates } from '@/hooks/useWorkflowTemplates'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Issue, IssueStatus, Priority } from '@/lib/types'
@@ -124,7 +124,9 @@ function IssueChecklist({ issueId }: { issueId: string }) {
   const { data: templates } = useWorkflowTemplates()
   const toggleItem = useToggleChecklistItem()
   const applyTemplate = useApplyTemplate()
+  const deleteChecklist = useDeleteChecklist()
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   if (isLoading) return null
 
@@ -147,6 +149,35 @@ function IssueChecklist({ issueId }: { issueId: string }) {
             </span>
           )}
         </div>
+        {hasItems && !confirmDelete && (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="text-text-muted hover:text-red-500 transition-colors p-1 rounded-[6px] hover:bg-red-500/10"
+            title="Remove checklist"
+          >
+            <Trash2 size={13} strokeWidth={1.5} />
+          </button>
+        )}
+        {hasItems && confirmDelete && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-text-muted">Remove?</span>
+            <button
+              onClick={async () => {
+                await deleteChecklist.mutateAsync(issueId)
+                setConfirmDelete(false)
+              }}
+              className="text-[11px] font-medium text-red-500 hover:text-red-600 px-1.5 py-0.5 rounded-[4px] hover:bg-red-500/10 transition-colors"
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => setConfirmDelete(false)}
+              className="text-[11px] font-medium text-text-muted hover:text-text-secondary px-1.5 py-0.5 rounded-[4px] hover:bg-surface-hover transition-colors"
+            >
+              No
+            </button>
+          </div>
+        )}
         {!hasItems && templates && templates.length > 0 && (
           <button
             onClick={() => setShowTemplatePicker(!showTemplatePicker)}
