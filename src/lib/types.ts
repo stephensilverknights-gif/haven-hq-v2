@@ -8,6 +8,8 @@ export interface Profile {
   name: string
   initials: string
   role: string | null
+  daily_rep_target: number
+  is_training_admin: boolean
   created_at: string
 }
 

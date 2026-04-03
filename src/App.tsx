@@ -4,6 +4,8 @@ import Login from '@/pages/Login'
 import HotSheet from '@/pages/HotSheet'
 import CostsView from '@/pages/CostsView'
 import Settings from '@/pages/Settings'
+import Training from '@/pages/Training'
+import TrainingSession from '@/pages/TrainingSession'
 import type { ReactNode } from 'react'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -49,6 +51,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/training"
+        element={
+          <ProtectedRoute>
+            <Training />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/training/session/:id"
+        element={
+          <ProtectedRoute>
+            <TrainingSession />
           </ProtectedRoute>
         }
       />

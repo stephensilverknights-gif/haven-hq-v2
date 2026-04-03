@@ -105,6 +105,12 @@
 .issue-card[data-priority="urgent"]:not([data-selected="true"]):hover  { animation: glow-urgent 1.4s ease-in-out infinite; }
 .issue-card[data-priority="watch"]:not([data-selected="true"]):hover   { animation: glow-watch  1.4s ease-in-out infinite; }
 
+/* Typing indicator dots */
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+  30%           { opacity: 1;   transform: scale(1);    }
+}
+
 /* Slim themed scrollbar — replaces the browser default grey */
 .themed-scroll {
   scrollbar-width: thin;

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useMatch } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, LogOut, Flame, DollarSign, Menu, Settings } from 'lucide-react'
+import { Plus, LogOut, Flame, DollarSign, Menu, Settings, GraduationCap } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   Sheet,
@@ -13,12 +13,13 @@ import UserAvatar from '@/components/UserAvatar'
 import { cn } from '@/lib/utils'
 
 interface TopNavProps {
-  onNewIssue: () => void
+  onNewIssue?: () => void
 }
 
 const navItems = [
   { to: '/', label: 'Hot Sheet', icon: Flame, end: true },
   { to: '/costs', label: 'Costs', icon: DollarSign, end: false },
+  { to: '/training', label: 'Training', icon: GraduationCap, end: false },
 ]
 
 function DesktopNavItem({
@@ -40,10 +41,10 @@ function DesktopNavItem({
     <button
       onClick={() => navigate(to)}
       className={cn(
-        'relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-[20px] transition-all duration-200',
+        'relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-[20px] cursor-pointer transition-all duration-200',
         isActive
           ? 'text-white'
-          : 'text-text-secondary hover:text-text-primary'
+          : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.06] hover:scale-[1.03]'
       )}
     >
       <Icon size={16} strokeWidth={1.5} />
@@ -149,24 +150,26 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
         {/* Right: new issue + user */}
         <div className="flex items-center gap-3 sm:gap-4">
           {/* CTA button — neon outline with glow */}
-          <div className="relative group">
-            <div
-              className="absolute -inset-2 rounded-[24px] opacity-50 group-hover:opacity-80 transition-opacity duration-300 blur-xl pointer-events-none"
-              style={{ background: 'rgba(123, 124, 248, 0.5)' }}
-            />
-            <button
-              onClick={onNewIssue}
-              className="relative flex items-center gap-1.5 px-5 py-2 rounded-[20px] font-medium text-sm text-white min-h-[40px] transition-all duration-200 hover:scale-[1.03]"
-              style={{
-                background: 'rgba(123, 124, 248, 0.12)',
-                border: '1.5px solid rgba(123, 124, 248, 0.8)',
-                boxShadow: '0 0 10px rgba(123, 124, 248, 0.4), 0 0 30px rgba(123, 124, 248, 0.15), inset 0 0 10px rgba(123, 124, 248, 0.1)',
-              }}
-            >
-              <Plus size={18} strokeWidth={1.5} />
-              <span className="hidden sm:inline">New Task</span>
-            </button>
-          </div>
+          {onNewIssue && (
+            <div className="relative group">
+              <div
+                className="absolute -inset-2 rounded-[24px] opacity-50 group-hover:opacity-80 transition-opacity duration-300 blur-xl pointer-events-none"
+                style={{ background: 'rgba(123, 124, 248, 0.5)' }}
+              />
+              <button
+                onClick={onNewIssue}
+                className="relative flex items-center gap-1.5 px-5 py-2 rounded-[20px] font-medium text-sm text-white min-h-[40px] transition-all duration-200 hover:scale-[1.03]"
+                style={{
+                  background: 'rgba(123, 124, 248, 0.12)',
+                  border: '1.5px solid rgba(123, 124, 248, 0.8)',
+                  boxShadow: '0 0 10px rgba(123, 124, 248, 0.4), 0 0 30px rgba(123, 124, 248, 0.15), inset 0 0 10px rgba(123, 124, 248, 0.1)',
+                }}
+              >
+                <Plus size={18} strokeWidth={1.5} />
+                <span className="hidden sm:inline">New Task</span>
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             {profile && (
@@ -181,7 +184,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
             )}
             <button
               onClick={() => navigate('/settings')}
-              className="hidden sm:flex items-center justify-center min-w-[36px] min-h-[36px] rounded-[8px] transition-all duration-200 hover:scale-[1.05]"
+              className="hidden sm:flex items-center justify-center min-w-[36px] min-h-[36px] rounded-[8px] cursor-pointer transition-all duration-200 hover:scale-[1.05] hover:bg-white/[0.06]"
               style={{
                 color: '#7B7CF8',
                 filter: 'drop-shadow(0 0 4px rgba(123, 124, 248, 0.5)) drop-shadow(0 0 10px rgba(123, 124, 248, 0.25))',
@@ -192,7 +195,7 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
             </button>
             <button
               onClick={signOut}
-              className="hidden sm:flex items-center justify-center min-w-[36px] min-h-[36px] rounded-[8px] text-text-muted hover:text-text-primary hover:bg-white/5 transition-all duration-200"
+              className="hidden sm:flex items-center justify-center min-w-[36px] min-h-[36px] rounded-[8px] cursor-pointer text-text-muted hover:text-text-primary hover:bg-white/[0.06] transition-all duration-200"
               title="Sign out"
             >
               <LogOut size={17} strokeWidth={1.5} />
