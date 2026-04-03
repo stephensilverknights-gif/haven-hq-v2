@@ -984,6 +984,92 @@ export async function callHostawayImport(limit: number = 20): Promise<any> {
   return await res.json()
 }
 
+export async function convertImportToScenario(imp: HostawayImport): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) throw new Error('Not authenticated')
+
+  // Parse transcript
+  let transcript = imp.raw_transcript ?? []
+  if (typeof transcript === 'string') {
+    try { transcript = JSON.parse(transcript) } catch { transcript = [] }
+  }
+  if (!Array.isArray(transcript)) transcript = []
+
+  const transcriptText = (transcript as { role: string; content: string }[])
+    .map((m) => `${m.role === 'guest' ? 'GUEST' : 'HOST'}: ${m.content}`)
+    .join('\n\n')
+
+  const classifyPrompt = `You are analyzing a real guest conversation from Haven by Design Stays (premium short-term rentals) to create a training scenario.
+
+CONVERSATION (Property: ${imp.property_name || 'Unknown'}):
+${transcriptText}
+
+Create a training scenario from this conversation. Return ONLY valid JSON:
+{
+  "title": "<short catchy title, 3-6 words>",
+  "difficulty": "<easy|medium|hard based on guest demeanor and complexity. Most real guests are frustrated but human, not cartoonishly hostile.>",
+  "issue_type": "<one of: maintenance, cleanliness, early_checkin, late_checkout, noise, amenity_failure, lockout, refund_demand, neighbor_complaint, booking_error, other>",
+  "brief": "<2-3 sentence scenario brief for the trainee. Describe the situation without revealing the resolution.>",
+  "guest_persona": "<1-2 sentence description of the guest's personality and emotional state for the AI to roleplay. Keep it realistic and human.>",
+  "haven_standard": "<What Haven expects as the correct response approach for this type of issue. 2-3 sentences.>"
+}`
+
+  // Call the training-chat edge function to get Claude's response
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/training-chat`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      system_prompt: 'You are a training scenario designer for Haven by Design Stays. Return only valid JSON.',
+      messages: [{ role: 'trainee', content: classifyPrompt }],
+      is_opener: false,
+    }),
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(body.error || `Classification error: ${res.status}`)
+  }
+
+  const data = await res.json()
+  const rawText = data.content ?? ''
+  const jsonStr = rawText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+  const classification = JSON.parse(jsonStr)
+
+  // Create draft scenario
+  const { data: newScenario, error: insertError } = await supabase
+    .from('scenarios')
+    .insert({
+      title: classification.title,
+      difficulty: classification.difficulty ?? 'medium',
+      property: imp.property_name,
+      issue_type: classification.issue_type ?? 'other',
+      brief: classification.brief ?? '',
+      guest_persona: classification.guest_persona ?? '',
+      haven_standard: classification.haven_standard ?? '',
+      source: 'hostaway',
+      hostaway_conversation_id: imp.hostaway_conversation_id,
+      approved: false,
+      active: false,
+    })
+    .select('id')
+    .single()
+
+  if (insertError) throw insertError
+
+  // Link back to the import
+  await supabase
+    .from('hostaway_imports')
+    .update({ converted_to_scenario: true, scenario_id: newScenario.id })
+    .eq('id', imp.id)
+
+  return newScenario.id
+}
+
 export function useUpdateHavenStandard() {
   const queryClient = useQueryClient()
 

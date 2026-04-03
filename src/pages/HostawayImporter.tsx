@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   useHostawayImports,
   callHostawayImport,
+  convertImportToScenario,
 } from '@/hooks/useTraining'
 import { TRAINING_ISSUE_TYPE_LABELS } from '@/lib/training-types'
 import type { TrainingIssueType, HostawayImport } from '@/lib/training-types'
@@ -50,11 +51,15 @@ function SentimentBar({ score }: { score: number }) {
 function ImportRow({
   imp,
   index,
+  onConverted,
 }: {
   imp: HostawayImport
   index: number
+  onConverted: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [converting, setConverting] = useState(false)
+  const [convertError, setConvertError] = useState<string | null>(null)
   const navigate = useNavigate()
 
   return (
@@ -176,14 +181,45 @@ function ImportRow({
               </div>
 
               {/* Actions */}
-              {imp.converted_to_scenario && imp.scenario_id && (
-                <button
-                  onClick={() => navigate('/admin/scenarios')}
-                  className="text-xs text-haven-indigo hover:underline cursor-pointer"
-                >
-                  View in Scenario Manager
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {imp.converted_to_scenario && imp.scenario_id ? (
+                  <button
+                    onClick={() => navigate('/admin/scenarios')}
+                    className="text-xs text-haven-indigo hover:underline cursor-pointer"
+                  >
+                    View in Scenario Manager
+                  </button>
+                ) : imp.worth_converting ? (
+                  <button
+                    onClick={async () => {
+                      setConverting(true)
+                      setConvertError(null)
+                      try {
+                        await convertImportToScenario(imp)
+                        onConverted()
+                      } catch (err) {
+                        setConvertError(err instanceof Error ? err.message : 'Conversion failed')
+                      } finally {
+                        setConverting(false)
+                      }
+                    }}
+                    disabled={converting}
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-[8px] text-haven-indigo border border-haven-indigo/30 hover:bg-haven-indigo/10 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {converting ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" />
+                        Converting...
+                      </>
+                    ) : (
+                      'Convert to Scenario'
+                    )}
+                  </button>
+                ) : null}
+                {convertError && (
+                  <span className="text-xs text-fire-text">{convertError}</span>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
@@ -383,7 +419,10 @@ export default function HostawayImporter() {
           ) : (
             <div className="flex flex-col gap-2">
               {filtered.map((imp, i) => (
-                <ImportRow key={imp.id} imp={imp} index={i} />
+                <ImportRow key={imp.id} imp={imp} index={i} onConverted={() => {
+                  queryClient.invalidateQueries({ queryKey: ['hostawayImports'] })
+                  queryClient.invalidateQueries({ queryKey: ['allScenarios'] })
+                }} />
               ))}
             </div>
           )}
