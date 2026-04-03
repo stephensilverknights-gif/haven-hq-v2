@@ -60,9 +60,9 @@ export default function IssueRow({
         borderLeftColor: borderColors[issue.priority],
       }}
     >
-      <div className="px-3.5 py-3">
+      <div className="px-3.5 py-3 min-w-0">
         {/* Row 1: property + title + badges */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
           {/* Property */}
           {issue.property && (
             <PropertyBadge
@@ -83,7 +83,7 @@ export default function IssueRow({
 
         {/* Row 2: last activity note (if exists) */}
         {lastNote && (
-          <div className="flex items-center gap-1.5 mt-1.5">
+          <div className="flex items-center gap-1.5 mt-1.5 min-w-0 overflow-hidden">
             <MessageSquare size={11} strokeWidth={1.5} className="text-text-muted shrink-0" />
             <p className="text-[12px] text-text-secondary truncate">
               {lastNoteAuthor && (
@@ -95,8 +95,8 @@ export default function IssueRow({
         )}
 
         {/* Row 3: status + checklist progress + time */}
-        <div className="flex items-center justify-between mt-2 gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center justify-between mt-2 gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
             {/* Status */}
             <div className="flex items-center gap-1">
               <span

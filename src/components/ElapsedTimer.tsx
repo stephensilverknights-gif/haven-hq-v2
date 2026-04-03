@@ -56,7 +56,7 @@ export default function ElapsedTimer({ startTime, priority, className }: Elapsed
           <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
         </span>
       )}
-      <span className="text-text-muted font-normal">Task Created</span>
+      <span className="text-text-muted font-normal hidden sm:inline">Task Created</span>
       <span className="font-mono">{elapsed}</span>
     </span>
   )
