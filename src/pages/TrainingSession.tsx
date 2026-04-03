@@ -8,6 +8,7 @@ import {
   useUpdateTrainingSession,
   useEndTrainingSession,
   callTrainingChat,
+  callTrainingScore,
 } from '@/hooks/useTraining'
 import { DIFFICULTY_LABELS, DIFFICULTY_COLORS } from '@/lib/training-types'
 import type { ChatMessage, Difficulty } from '@/lib/training-types'
@@ -177,19 +178,36 @@ export default function TrainingSession() {
     }
   }
 
+  const [isScoring, setIsScoring] = useState(false)
+
   const handleEndSession = async () => {
     if (!id || !session || !scenario || !profile) return
 
+    setIsScoring(true)
+    setError(null)
+
     try {
+      // 1. Score the session
+      const scoreResult = await callTrainingScore({
+        transcript: messages,
+        scenario_brief: scenario.brief,
+        haven_standard: scenario.haven_standard,
+      })
+
+      // 2. End session with scores
       await endSession.mutateAsync({
         session_id: id,
         trainee_id: profile.id,
         scenario,
         daily_rep_target: dailyRepTarget,
+        score: scoreResult,
       })
-      navigate('/training')
+
+      // 3. Redirect to debrief
+      navigate(`/training/complete/${id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to end session')
+      setError(err instanceof Error ? err.message : 'Failed to score session')
+      setIsScoring(false)
     }
   }
 
@@ -268,16 +286,16 @@ export default function TrainingSession() {
             </span>
             <button
               onClick={handleEndSession}
-              disabled={!canEnd || endSession.isPending}
+              disabled={!canEnd || endSession.isPending || isScoring}
               className={cn(
                 'text-xs font-medium px-3 py-1.5 rounded-[8px] transition-all duration-200',
-                canEnd
-                  ? 'text-haven-indigo hover:bg-haven-indigo/10 border border-haven-indigo/30'
+                canEnd && !isScoring
+                  ? 'text-haven-indigo hover:bg-haven-indigo/10 border border-haven-indigo/30 cursor-pointer'
                   : 'text-text-muted border border-border cursor-not-allowed'
               )}
-              title={canEnd ? 'End session and return' : 'Complete at least 3 exchanges first'}
+              title={canEnd ? 'End session and get scored' : 'Complete at least 3 exchanges first'}
             >
-              {endSession.isPending ? 'Ending...' : 'End & Score'}
+              {isScoring ? 'Scoring...' : endSession.isPending ? 'Saving...' : 'End & Score'}
             </button>
           </div>
         </div>
@@ -426,14 +444,14 @@ export default function TrainingSession() {
             onChange={handleTextareaInput}
             onKeyDown={handleKeyDown}
             placeholder="Type your response..."
-            disabled={isGenerating || !openerLoaded}
+            disabled={isGenerating || !openerLoaded || isScoring}
             rows={1}
             className="flex-1 bg-surface border border-border rounded-[8px] px-3 py-2 text-sm text-text-primary placeholder:text-text-muted resize-none focus:outline-none focus:ring-1 focus:ring-haven-indigo/50 focus:border-haven-indigo/50 disabled:opacity-50 transition-colors"
             style={{ maxHeight: '120px' }}
           />
           <button
             onClick={handleSend}
-            disabled={!inputValue.trim() || isGenerating || !openerLoaded}
+            disabled={!inputValue.trim() || isGenerating || !openerLoaded || isScoring}
             className={cn(
               'flex items-center justify-center min-w-[40px] min-h-[40px] rounded-[8px] transition-all duration-200',
               inputValue.trim() && !isGenerating

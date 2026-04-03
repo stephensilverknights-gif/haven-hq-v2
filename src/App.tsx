@@ -6,6 +6,7 @@ import CostsView from '@/pages/CostsView'
 import Settings from '@/pages/Settings'
 import Training from '@/pages/Training'
 import TrainingSession from '@/pages/TrainingSession'
+import TrainingComplete from '@/pages/TrainingComplete'
 import type { ReactNode } from 'react'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -67,6 +68,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <TrainingSession />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/training/complete/:id"
+        element={
+          <ProtectedRoute>
+            <TrainingComplete />
           </ProtectedRoute>
         }
       />

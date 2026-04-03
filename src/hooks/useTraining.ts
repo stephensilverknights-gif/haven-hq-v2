@@ -52,6 +52,51 @@ export async function callTrainingChat(params: {
   return data.content
 }
 
+// ── Scoring Edge Function Caller ────────────────────────────────────────────
+
+export interface ScoreCriterion {
+  key: string
+  name: string
+  score: number
+  pass: boolean
+}
+
+export interface ScoreResult {
+  overall: number
+  grade: 'Excellent' | 'Good' | 'Needs Work' | 'Failing'
+  criteria: ScoreCriterion[]
+  feedback: string
+  coaching: string
+}
+
+export async function callTrainingScore(params: {
+  transcript: ChatMessage[]
+  scenario_brief: string
+  haven_standard: string
+}): Promise<ScoreResult> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) throw new Error('Not authenticated')
+
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/training-score`
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(params),
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(body.error || `Scoring error: ${res.status}`)
+  }
+
+  return await res.json()
+}
+
 // ── Scenario Selection Algorithm ────────────────────────────────────────────
 
 export function selectNextScenario(
@@ -309,6 +354,7 @@ interface EndSessionInput {
   trainee_id: string
   scenario: Scenario
   daily_rep_target: number
+  score?: ScoreResult
 }
 
 export function useEndTrainingSession() {
@@ -316,10 +362,27 @@ export function useEndTrainingSession() {
 
   return useMutation({
     mutationFn: async (input: EndSessionInput) => {
-      // 1. Mark session complete
+      // 1. Mark session complete with scores
+      const scoreFields = input.score
+        ? {
+            score_overall: input.score.overall,
+            score_empathy: input.score.criteria.find((c) => c.key === 'empathy_first')?.score ?? null,
+            score_action: input.score.criteria.find((c) => c.key === 'concrete_action')?.score ?? null,
+            score_tone: input.score.criteria.find((c) => c.key === 'haven_tone')?.score ?? null,
+            score_resolution: input.score.criteria.find((c) => c.key === 'appropriate_resolution')?.score ?? null,
+            score_no_policy: input.score.criteria.find((c) => c.key === 'no_policy_hiding')?.score ?? null,
+            grade: input.score.grade,
+            feedback: input.score.feedback,
+            coaching: input.score.coaching,
+          }
+        : {}
+
       const { error: sessionError } = await supabase
         .from('training_sessions')
-        .update({ completed_at: new Date().toISOString() })
+        .update({
+          completed_at: new Date().toISOString(),
+          ...scoreFields,
+        })
         .eq('id', input.session_id)
 
       if (sessionError) throw sessionError
@@ -340,11 +403,29 @@ export function useEndTrainingSession() {
         .maybeSingle()
 
       if (existing) {
+        const newReps = (existing.reps_completed ?? 0) + 1
+        const scoreVal = input.score?.overall ?? null
+        // Recalculate avg_score
+        let newAvg = existing.avg_score
+        if (scoreVal !== null) {
+          const prevTotal = (existing.avg_score ?? 0) * (existing.reps_completed ?? 0)
+          newAvg = Math.round(((prevTotal + scoreVal) / newReps) * 100) / 100
+        }
+        const newHighest = scoreVal !== null
+          ? Math.max(existing.highest_score ?? 0, scoreVal)
+          : existing.highest_score
+        const newLowest = scoreVal !== null
+          ? Math.min(existing.lowest_score ?? 100, scoreVal)
+          : existing.lowest_score
+
         await supabase
           .from('daily_summaries')
           .update({
-            reps_completed: (existing.reps_completed ?? 0) + 1,
+            reps_completed: newReps,
             [diffKey]: (existing[diffKey] ?? 0) + 1,
+            avg_score: newAvg,
+            highest_score: newHighest,
+            lowest_score: newLowest,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id)
@@ -354,6 +435,9 @@ export function useEndTrainingSession() {
           date: today,
           reps_completed: 1,
           reps_required: input.daily_rep_target,
+          avg_score: input.score?.overall ?? null,
+          highest_score: input.score?.overall ?? null,
+          lowest_score: input.score?.overall ?? null,
           [diffKey]: 1,
         })
       }
@@ -367,17 +451,24 @@ export function useEndTrainingSession() {
         .maybeSingle()
 
       if (historyRow) {
+        const scoreVal = input.score?.overall ?? null
         await supabase
           .from('trainee_scenario_history')
           .update({
             last_used_at: new Date().toISOString(),
             times_used: (historyRow.times_used ?? 0) + 1,
+            latest_score: scoreVal,
+            best_score: scoreVal !== null
+              ? Math.max(historyRow.best_score ?? 0, scoreVal)
+              : historyRow.best_score,
           })
           .eq('id', historyRow.id)
       } else {
         await supabase.from('trainee_scenario_history').insert({
           trainee_id: input.trainee_id,
           scenario_id: input.scenario.id,
+          latest_score: input.score?.overall ?? null,
+          best_score: input.score?.overall ?? null,
         })
       }
 
