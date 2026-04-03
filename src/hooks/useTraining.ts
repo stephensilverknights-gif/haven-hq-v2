@@ -97,6 +97,72 @@ export async function callTrainingScore(params: {
   return await res.json()
 }
 
+// ── Weekly Progress ─────────────────────────────────────────────────────────
+
+export interface WeeklyProgress {
+  thisWeek: { reps: number; avgScore: number | null; sessions: number }
+  lastWeek: { reps: number; avgScore: number | null; sessions: number }
+}
+
+function getWeekBounds(weeksAgo: number): { start: string; end: string } {
+  const now = new Date()
+  // Start of this week (Monday)
+  const dayOfWeek = now.getDay()
+  const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - mondayOffset - weeksAgo * 7)
+  monday.setHours(0, 0, 0, 0)
+
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 7)
+
+  return { start: monday.toISOString(), end: sunday.toISOString() }
+}
+
+export function useWeeklyProgress(userId: string | undefined) {
+  return useQuery<WeeklyProgress>({
+    queryKey: ['weeklyProgress', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const thisWeekBounds = getWeekBounds(0)
+      const lastWeekBounds = getWeekBounds(1)
+
+      const [thisWeekRes, lastWeekRes] = await Promise.all([
+        supabase
+          .from('training_sessions')
+          .select('score_overall')
+          .eq('trainee_id', userId!)
+          .not('completed_at', 'is', null)
+          .not('score_overall', 'is', null)
+          .gte('completed_at', thisWeekBounds.start)
+          .lt('completed_at', thisWeekBounds.end),
+        supabase
+          .from('training_sessions')
+          .select('score_overall')
+          .eq('trainee_id', userId!)
+          .not('completed_at', 'is', null)
+          .not('score_overall', 'is', null)
+          .gte('completed_at', lastWeekBounds.start)
+          .lt('completed_at', lastWeekBounds.end),
+      ])
+
+      const thisWeekSessions = thisWeekRes.data ?? []
+      const lastWeekSessions = lastWeekRes.data ?? []
+
+      const calcAvg = (sessions: { score_overall: number | null }[]) => {
+        const scores = sessions.map((s) => s.score_overall).filter((s): s is number => s != null)
+        return scores.length > 0 ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null
+      }
+
+      return {
+        thisWeek: { reps: thisWeekSessions.length, avgScore: calcAvg(thisWeekSessions), sessions: thisWeekSessions.length },
+        lastWeek: { reps: lastWeekSessions.length, avgScore: calcAvg(lastWeekSessions), sessions: lastWeekSessions.length },
+      }
+    },
+    staleTime: 60_000,
+  })
+}
+
 // ── Scenario Selection Algorithm ────────────────────────────────────────────
 
 export function selectNextScenario(

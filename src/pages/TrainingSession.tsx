@@ -180,35 +180,57 @@ export default function TrainingSession() {
 
   const [isScoring, setIsScoring] = useState(false)
 
+  // If session is already completed, redirect to debrief
+  // (Must be before conditional returns to avoid hooks rule violation)
+  useEffect(() => {
+    if (session?.completed_at && id) {
+      navigate(`/training/complete/${id}`, { replace: true })
+    }
+  }, [session?.completed_at, id, navigate])
+
   const handleEndSession = async () => {
     if (!id || !session || !scenario || !profile) return
 
     setIsScoring(true)
     setError(null)
 
-    try {
-      // 1. Score the session
-      const scoreResult = await callTrainingScore({
-        transcript: messages,
-        scenario_brief: scenario.brief,
-        haven_standard: scenario.haven_standard,
-      })
+    // Retry up to 2 times on transient failures
+    const MAX_SCORE_RETRIES = 2
+    let lastErr: unknown = null
 
-      // 2. End session with scores
-      await endSession.mutateAsync({
-        session_id: id,
-        trainee_id: profile.id,
-        scenario,
-        daily_rep_target: dailyRepTarget,
-        score: scoreResult,
-      })
+    for (let attempt = 0; attempt <= MAX_SCORE_RETRIES; attempt++) {
+      try {
+        // 1. Score the session
+        const scoreResult = await callTrainingScore({
+          transcript: messages,
+          scenario_brief: scenario.brief,
+          haven_standard: scenario.haven_standard,
+        })
 
-      // 3. Redirect to debrief
-      navigate(`/training/complete/${id}`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to score session')
-      setIsScoring(false)
+        // 2. End session with scores
+        await endSession.mutateAsync({
+          session_id: id,
+          trainee_id: profile.id,
+          scenario,
+          daily_rep_target: dailyRepTarget,
+          score: scoreResult,
+        })
+
+        // 3. Redirect to debrief
+        navigate(`/training/complete/${id}`)
+        return
+      } catch (err) {
+        lastErr = err
+        if (attempt < MAX_SCORE_RETRIES) {
+          // Wait before retry (2s, then 4s)
+          await new Promise((r) => setTimeout(r, (attempt + 1) * 2000))
+          continue
+        }
+      }
     }
+
+    setError(lastErr instanceof Error ? lastErr.message : 'Failed to score session. Tap "End & Score" to try again.')
+    setIsScoring(false)
   }
 
   // Auto-resize textarea
@@ -226,13 +248,6 @@ export default function TrainingSession() {
       </div>
     )
   }
-
-  // If session is already completed, redirect to debrief
-  useEffect(() => {
-    if (session?.completed_at && id) {
-      navigate(`/training/complete/${id}`, { replace: true })
-    }
-  }, [session?.completed_at, id, navigate])
 
   if (!session || !scenario) {
     return (

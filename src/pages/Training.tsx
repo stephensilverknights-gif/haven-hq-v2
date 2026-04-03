@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Zap, Flame, AlertTriangle, Shield, PlayCircle, X } from 'lucide-react'
+import { Zap, Flame, AlertTriangle, Shield, PlayCircle, X, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import TopNav from '@/components/TopNav'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -12,6 +12,7 @@ import {
   useCreateTrainingSession,
   useInProgressSession,
   useDiscardSession,
+  useWeeklyProgress,
   selectNextScenario,
 } from '@/hooks/useTraining'
 import { DIFFICULTY_LABELS, DIFFICULTY_COLORS } from '@/lib/training-types'
@@ -46,6 +47,7 @@ export default function Training() {
   const createSession = useCreateTrainingSession()
   const { data: inProgressSession } = useInProgressSession(userId)
   const discardSession = useDiscardSession()
+  const { data: weeklyProgress } = useWeeklyProgress(userId)
 
   const dailyTarget = profile?.daily_rep_target ?? 10
   const repsCompleted = stats?.reps_completed ?? 0
@@ -197,6 +199,66 @@ export default function Training() {
             )}
           </motion.div>
 
+          {/* Weekly Progress */}
+          {weeklyProgress && (weeklyProgress.thisWeek.sessions > 0 || weeklyProgress.lastWeek.sessions > 0) && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-4 bg-card-bg rounded-[10px] border border-border p-4"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] text-text-muted uppercase tracking-wider font-medium">
+                  This Week
+                </span>
+                {weeklyProgress.lastWeek.avgScore != null && weeklyProgress.thisWeek.avgScore != null && (
+                  (() => {
+                    const diff = weeklyProgress.thisWeek.avgScore - weeklyProgress.lastWeek.avgScore
+                    if (Math.abs(diff) < 2) return (
+                      <span className="flex items-center gap-0.5 text-[10px] text-text-muted">
+                        <Minus size={10} /> Steady
+                      </span>
+                    )
+                    return diff > 0 ? (
+                      <span className="flex items-center gap-0.5 text-[10px] text-watch-text">
+                        <TrendingUp size={10} /> +{Math.round(diff)} from last week
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-0.5 text-[10px] text-urgent-text">
+                        <TrendingDown size={10} /> {Math.round(diff)} from last week
+                      </span>
+                    )
+                  })()
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-lg font-bold text-text-primary">
+                    {weeklyProgress.thisWeek.reps}
+                  </div>
+                  <div className="text-xs text-text-muted">reps this week</div>
+                </div>
+                <div>
+                  <div className={cn(
+                    'text-lg font-bold',
+                    weeklyProgress.thisWeek.avgScore != null && weeklyProgress.thisWeek.avgScore >= 85
+                      ? 'text-watch-text'
+                      : weeklyProgress.thisWeek.avgScore != null && weeklyProgress.thisWeek.avgScore >= 70
+                        ? 'text-haven-indigo'
+                        : weeklyProgress.thisWeek.avgScore != null && weeklyProgress.thisWeek.avgScore >= 50
+                          ? 'text-urgent-text'
+                          : weeklyProgress.thisWeek.avgScore != null
+                            ? 'text-fire-text'
+                            : 'text-text-muted'
+                  )}>
+                    {weeklyProgress.thisWeek.avgScore ?? '—'}
+                  </div>
+                  <div className="text-xs text-text-muted">avg score</div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* Start Rep CTA */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -256,14 +318,26 @@ export default function Training() {
                   const diff = session.scenario?.difficulty as Difficulty | undefined
                   const colors = diff ? DIFFICULTY_COLORS[diff] : null
                   return (
-                    <motion.div
+                    <motion.button
                       key={session.id}
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.15, delay: i * 0.04, ease: [0.16, 1, 0.3, 1] }}
-                      className="bg-card-bg rounded-[10px] border border-border p-4 flex items-center justify-between"
+                      onClick={() => navigate(`/training/complete/${session.id}`)}
+                      className="w-full bg-card-bg rounded-[10px] border border-border p-4 flex items-center justify-between hover:bg-surface-hover transition-colors cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3 min-w-0">
+                        {session.score_overall != null && (
+                          <span className={cn(
+                            'text-sm font-bold w-8 text-center shrink-0',
+                            session.score_overall >= 85 ? 'text-watch-text'
+                              : session.score_overall >= 70 ? 'text-haven-indigo'
+                              : session.score_overall >= 50 ? 'text-urgent-text'
+                              : 'text-fire-text'
+                          )}>
+                            {session.score_overall}
+                          </span>
+                        )}
                         <span className="text-sm font-medium text-text-primary truncate">
                           {session.scenario?.title ?? 'Scenario'}
                         </span>
@@ -283,7 +357,7 @@ export default function Training() {
                       <span className="text-xs text-text-muted shrink-0 ml-3">
                         {session.exchange_count} exchanges
                       </span>
-                    </motion.div>
+                    </motion.button>
                   )
                 })}
               </div>

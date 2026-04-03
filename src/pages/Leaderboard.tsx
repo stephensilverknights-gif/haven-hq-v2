@@ -228,8 +228,6 @@ function PersonalStats({ history }: { history: HistorySession[] }) {
     ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
     : null
   const best = scores.length > 0 ? Math.max(...scores) : null
-  const excellentCount = history.filter(h => h.grade === 'Excellent').length
-
   // Calculate weakest criteria
   const criteriaAvgs = [
     { name: 'Empathy', avg: calcAvg(history.map(h => h.score_empathy)) },
