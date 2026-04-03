@@ -11,10 +11,11 @@ import Leaderboard from '@/pages/Leaderboard'
 import AdminDashboard from '@/pages/AdminDashboard'
 import ScenarioManager from '@/pages/ScenarioManager'
 import HostawayImporter from '@/pages/HostawayImporter'
+import TeamManagement from '@/pages/TeamManagement'
 import type { ReactNode } from 'react'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { session, loading } = useAuth()
+  const { session, profile, loading, signOut } = useAuth()
 
   if (loading) {
     return (
@@ -26,6 +27,32 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (!session) {
     return <Navigate to="/login" replace />
+  }
+
+  // Approval gate — unapproved users see a waiting screen
+  if (profile && !profile.approved) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-page-bg">
+        <div className="text-center max-w-sm mx-auto px-6">
+          <div className="w-14 h-14 rounded-full bg-surface border border-border flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">&#x23F3;</span>
+          </div>
+          <h2 className="text-lg font-semibold text-text-primary mb-2">Waiting for Approval</h2>
+          <p className="text-sm text-text-secondary mb-1">
+            Hi {profile.name}, your account has been created.
+          </p>
+          <p className="text-sm text-text-secondary mb-6">
+            An admin needs to approve your access before you can use HavenHQ. Hang tight!
+          </p>
+          <button
+            onClick={() => signOut()}
+            className="text-sm text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return <>{children}</>
@@ -104,6 +131,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Leaderboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/team"
+        element={
+          <ProtectedRoute>
+            <TeamManagement />
           </ProtectedRoute>
         }
       />

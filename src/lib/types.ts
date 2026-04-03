@@ -10,6 +10,7 @@ export interface Profile {
   role: string | null
   daily_rep_target: number
   is_training_admin: boolean
+  approved: boolean
   created_at: string
 }
 
