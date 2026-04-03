@@ -295,6 +295,46 @@ export function useScenarioHistory(userId: string | undefined) {
   })
 }
 
+// ── Admin: All Scenarios + Haven Standards ───────────────────────────────────
+
+async function fetchAllScenarios(): Promise<Scenario[]> {
+  const { data, error } = await supabase
+    .from('scenarios')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data as Scenario[]
+}
+
+export function useAllScenarios() {
+  return useQuery({
+    queryKey: ['allScenarios'],
+    queryFn: fetchAllScenarios,
+    staleTime: 30_000,
+  })
+}
+
+import type { HavenStandard } from '@/lib/training-types'
+
+async function fetchHavenStandards(): Promise<HavenStandard[]> {
+  const { data, error } = await supabase
+    .from('haven_standards')
+    .select('*')
+    .order('issue_type', { ascending: true })
+
+  if (error) throw error
+  return data as HavenStandard[]
+}
+
+export function useHavenStandards() {
+  return useQuery({
+    queryKey: ['havenStandards'],
+    queryFn: fetchHavenStandards,
+    staleTime: 60_000,
+  })
+}
+
 // ── Leaderboard & History ────────────────────────────────────────────────────
 
 export interface LeaderboardEntry {
@@ -767,6 +807,90 @@ export function useDiscardSession() {
       queryClient.invalidateQueries({ queryKey: ['inProgressSession'] })
       queryClient.invalidateQueries({ queryKey: ['todaySessions'] })
       queryClient.invalidateQueries({ queryKey: ['trainingSession'] })
+    },
+  })
+}
+
+// ── Admin: Scenario CRUD ─────────────────────────────────────────────────────
+
+export interface ScenarioInput {
+  title: string
+  difficulty: Difficulty
+  property: string | null
+  issue_type: string
+  brief: string
+  guest_persona: string
+  haven_standard: string
+  source?: 'handcrafted' | 'hostaway' | 'field'
+  approved?: boolean
+  active?: boolean
+}
+
+export function useCreateScenario() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: ScenarioInput) => {
+      const { data, error } = await supabase
+        .from('scenarios')
+        .insert({
+          ...input,
+          source: input.source ?? 'handcrafted',
+          approved: input.approved ?? false,
+          active: input.active ?? false,
+        })
+        .select('*')
+        .single()
+
+      if (error) throw error
+      return data as Scenario
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allScenarios'] })
+      queryClient.invalidateQueries({ queryKey: ['scenarios'] })
+    },
+  })
+}
+
+export function useUpdateScenario() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, ...fields }: Partial<ScenarioInput> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('scenarios')
+        .update({ ...fields, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select('*')
+        .single()
+
+      if (error) throw error
+      return data as Scenario
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allScenarios'] })
+      queryClient.invalidateQueries({ queryKey: ['scenarios'] })
+    },
+  })
+}
+
+export function useUpdateHavenStandard() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, standard_text }: { id: string; standard_text: string }) => {
+      const { data, error } = await supabase
+        .from('haven_standards')
+        .update({ standard_text, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select('*')
+        .single()
+
+      if (error) throw error
+      return data as HavenStandard
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['havenStandards'] })
     },
   })
 }

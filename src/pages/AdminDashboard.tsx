@@ -458,14 +458,24 @@ export default function AdminDashboard() {
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="mb-6"
           >
-            <h2 className="text-xl font-semibold text-text-primary">Team Dashboard</h2>
-            <p className="text-sm text-text-secondary mt-0.5">
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-text-primary">Team Dashboard</h2>
+                <p className="text-sm text-text-secondary mt-0.5">
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/admin/scenarios')}
+                className="text-xs font-medium px-3 py-1.5 rounded-[8px] text-haven-indigo border border-haven-indigo/30 hover:bg-haven-indigo/10 transition-colors cursor-pointer"
+              >
+                Manage Scenarios
+              </button>
+            </div>
           </motion.div>
 
           {/* Team Overview Stats */}

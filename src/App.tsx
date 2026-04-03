@@ -9,6 +9,7 @@ import TrainingSession from '@/pages/TrainingSession'
 import TrainingComplete from '@/pages/TrainingComplete'
 import Leaderboard from '@/pages/Leaderboard'
 import AdminDashboard from '@/pages/AdminDashboard'
+import ScenarioManager from '@/pages/ScenarioManager'
 import type { ReactNode } from 'react'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -86,6 +87,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/scenarios"
+        element={
+          <ProtectedRoute>
+            <ScenarioManager />
           </ProtectedRoute>
         }
       />
