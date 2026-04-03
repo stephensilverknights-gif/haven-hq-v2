@@ -315,7 +315,7 @@ export function useAllScenarios() {
   })
 }
 
-import type { HavenStandard } from '@/lib/training-types'
+import type { HavenStandard, HostawayImport } from '@/lib/training-types'
 
 async function fetchHavenStandards(): Promise<HavenStandard[]> {
   const { data, error } = await supabase
@@ -872,6 +872,50 @@ export function useUpdateScenario() {
       queryClient.invalidateQueries({ queryKey: ['scenarios'] })
     },
   })
+}
+
+// ── Admin: Hostaway Imports ───────────────────────────────────────────────────
+
+async function fetchHostawayImports(): Promise<HostawayImport[]> {
+  const { data, error } = await supabase
+    .from('hostaway_imports')
+    .select('*')
+    .order('imported_at', { ascending: false })
+
+  if (error) throw error
+  return data as HostawayImport[]
+}
+
+export function useHostawayImports() {
+  return useQuery({
+    queryKey: ['hostawayImports'],
+    queryFn: fetchHostawayImports,
+    staleTime: 30_000,
+  })
+}
+
+export async function callHostawayImport(limit: number = 20): Promise<any> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) throw new Error('Not authenticated')
+
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/hostaway-import`
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({ limit }),
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(body.error || `Import error: ${res.status}`)
+  }
+
+  return await res.json()
 }
 
 export function useUpdateHavenStandard() {

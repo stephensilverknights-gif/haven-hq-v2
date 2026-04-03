@@ -10,6 +10,7 @@ import TrainingComplete from '@/pages/TrainingComplete'
 import Leaderboard from '@/pages/Leaderboard'
 import AdminDashboard from '@/pages/AdminDashboard'
 import ScenarioManager from '@/pages/ScenarioManager'
+import HostawayImporter from '@/pages/HostawayImporter'
 import type { ReactNode } from 'react'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -103,6 +104,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Leaderboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/imports"
+        element={
+          <ProtectedRoute>
+            <HostawayImporter />
           </ProtectedRoute>
         }
       />

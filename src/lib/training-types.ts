@@ -109,6 +109,28 @@ export interface HavenStandard {
   updated_at: string
 }
 
+export interface HostawayImport {
+  id: string
+  hostaway_conversation_id: string
+  hostaway_property_id: string | null
+  property_name: string | null
+  raw_transcript: { role: string; content: string; timestamp: string }[]
+  message_count: number
+  date_range_start: string | null
+  date_range_end: string | null
+  classified_issue_type: string | null
+  sentiment_score: number | null
+  escalation_detected: boolean
+  refund_requested: boolean
+  review_threatened: boolean
+  worth_converting: boolean | null
+  converted_to_scenario: boolean
+  scenario_id: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  imported_at: string
+}
+
 // ── Display Helpers ─────────────────────────────────────────────────────────
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {

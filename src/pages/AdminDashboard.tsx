@@ -20,7 +20,6 @@ import {
 import { DIFFICULTY_LABELS, DIFFICULTY_COLORS, GRADE_COLORS } from '@/lib/training-types'
 import type { Difficulty, DailySummary } from '@/lib/training-types'
 import type { Profile } from '@/lib/types'
-import type { TrainingSession } from '@/lib/training-types'
 import { cn } from '@/lib/utils'
 
 function todayString(): string {
@@ -469,12 +468,20 @@ export default function AdminDashboard() {
                   })}
                 </p>
               </div>
-              <button
-                onClick={() => navigate('/admin/scenarios')}
-                className="text-xs font-medium px-3 py-1.5 rounded-[8px] text-haven-indigo border border-haven-indigo/30 hover:bg-haven-indigo/10 transition-colors cursor-pointer"
-              >
-                Manage Scenarios
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/admin/imports')}
+                  className="text-xs font-medium px-3 py-1.5 rounded-[8px] text-text-muted border border-border hover:bg-surface-hover transition-colors cursor-pointer"
+                >
+                  Hostaway Importer
+                </button>
+                <button
+                  onClick={() => navigate('/admin/scenarios')}
+                  className="text-xs font-medium px-3 py-1.5 rounded-[8px] text-haven-indigo border border-haven-indigo/30 hover:bg-haven-indigo/10 transition-colors cursor-pointer"
+                >
+                  Manage Scenarios
+                </button>
+              </div>
             </div>
           </motion.div>
 
