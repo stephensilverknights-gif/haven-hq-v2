@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Zap, Flame, AlertTriangle, Shield } from 'lucide-react'
+import { Zap, Flame, AlertTriangle, Shield, PlayCircle, X } from 'lucide-react'
 import TopNav from '@/components/TopNav'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -10,6 +10,8 @@ import {
   useScenarios,
   useScenarioHistory,
   useCreateTrainingSession,
+  useInProgressSession,
+  useDiscardSession,
   selectNextScenario,
 } from '@/hooks/useTraining'
 import { DIFFICULTY_LABELS, DIFFICULTY_COLORS } from '@/lib/training-types'
@@ -42,6 +44,8 @@ export default function Training() {
   const { data: scenarios } = useScenarios()
   const { data: history } = useScenarioHistory(userId)
   const createSession = useCreateTrainingSession()
+  const { data: inProgressSession } = useInProgressSession(userId)
+  const discardSession = useDiscardSession()
 
   const dailyTarget = profile?.daily_rep_target ?? 10
   const repsCompleted = stats?.reps_completed ?? 0
@@ -63,6 +67,12 @@ export default function Training() {
 
   const handleStartRep = async () => {
     if (!userId || !scenarios || !history || !todaySessions) return
+
+    // If there's an in-progress session, resume it instead
+    if (inProgressSession) {
+      navigate(`/training/session/${inProgressSession.id}`)
+      return
+    }
 
     const nextScenario = selectNextScenario(scenarios, history ?? [], todaySessions ?? [], dailyTarget)
     if (!nextScenario) return
@@ -94,6 +104,53 @@ export default function Training() {
             </h2>
             <p className="text-sm text-text-secondary mt-0.5">{formatDate()}</p>
           </motion.div>
+
+          {/* Resume In-Progress Session Banner */}
+          {inProgressSession && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-4 rounded-[10px] border overflow-hidden"
+              style={{
+                background: 'rgba(123, 124, 248, 0.06)',
+                borderColor: 'rgba(123, 124, 248, 0.3)',
+              }}
+            >
+              <div className="px-5 py-4 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-text-primary">
+                    You have an in-progress session
+                  </p>
+                  <p className="text-xs text-text-secondary mt-0.5 truncate">
+                    {inProgressSession.scenario?.title ?? 'Scenario'} · {inProgressSession.exchange_count ?? 0} exchange{(inProgressSession.exchange_count ?? 0) !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => navigate(`/training/session/${inProgressSession.id}`)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-[8px] text-sm font-medium text-white transition-all duration-200 hover:scale-[1.03] cursor-pointer"
+                    style={{
+                      background: 'rgba(123, 124, 248, 0.15)',
+                      border: '1.5px solid rgba(123, 124, 248, 0.7)',
+                      boxShadow: '0 0 8px rgba(123, 124, 248, 0.3)',
+                    }}
+                  >
+                    <PlayCircle size={16} strokeWidth={1.5} />
+                    Resume
+                  </button>
+                  <button
+                    onClick={() => discardSession.mutate(inProgressSession.id)}
+                    disabled={discardSession.isPending}
+                    className="flex items-center justify-center w-8 h-8 rounded-[8px] text-text-muted hover:text-fire-text hover:bg-fire-bg/50 transition-colors cursor-pointer"
+                    title="Discard session"
+                  >
+                    <X size={16} strokeWidth={1.5} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Rep Counter Card */}
           <motion.div

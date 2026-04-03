@@ -295,6 +295,31 @@ export function useScenarioHistory(userId: string | undefined) {
   })
 }
 
+// ── In-Progress Session Detection ────────────────────────────────────────────
+
+async function fetchInProgressSession(userId: string): Promise<TrainingSession | null> {
+  const { data, error } = await supabase
+    .from('training_sessions')
+    .select('*, scenario:scenarios(*)')
+    .eq('trainee_id', userId)
+    .is('completed_at', null)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw error
+  return data as TrainingSession | null
+}
+
+export function useInProgressSession(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['inProgressSession', userId],
+    queryFn: () => fetchInProgressSession(userId!),
+    enabled: !!userId,
+    staleTime: 10_000,
+  })
+}
+
 // ── Mutations ───────────────────────────────────────────────────────────────
 
 interface CreateSessionInput {
@@ -321,6 +346,7 @@ export function useCreateTrainingSession() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todaySessions'] })
+      queryClient.invalidateQueries({ queryKey: ['inProgressSession'] })
     },
   })
 }
@@ -490,6 +516,32 @@ export function useEndTrainingSession() {
       queryClient.invalidateQueries({ queryKey: ['dailyStats'] })
       queryClient.invalidateQueries({ queryKey: ['todaySessions'] })
       queryClient.invalidateQueries({ queryKey: ['scenarioHistory'] })
+      queryClient.invalidateQueries({ queryKey: ['trainingSession'] })
+      queryClient.invalidateQueries({ queryKey: ['inProgressSession'] })
+    },
+  })
+}
+
+export function useDiscardSession() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      const { error } = await supabase
+        .from('training_sessions')
+        .update({
+          completed_at: new Date().toISOString(),
+          grade: null,
+          score_overall: null,
+          feedback: 'Session discarded by trainee.',
+        })
+        .eq('id', sessionId)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inProgressSession'] })
+      queryClient.invalidateQueries({ queryKey: ['todaySessions'] })
       queryClient.invalidateQueries({ queryKey: ['trainingSession'] })
     },
   })

@@ -227,6 +227,13 @@ export default function TrainingSession() {
     )
   }
 
+  // If session is already completed, redirect to debrief
+  useEffect(() => {
+    if (session?.completed_at && id) {
+      navigate(`/training/complete/${id}`, { replace: true })
+    }
+  }, [session?.completed_at, id, navigate])
+
   if (!session || !scenario) {
     return (
       <div className="h-screen flex items-center justify-center bg-page-bg">
