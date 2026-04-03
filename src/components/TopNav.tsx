@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useMatch } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, LogOut, Flame, DollarSign, Menu, Settings, GraduationCap, Trophy } from 'lucide-react'
+import { Plus, LogOut, Flame, DollarSign, Menu, Settings, GraduationCap, Trophy, ShieldCheck } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   Sheet,
@@ -16,12 +16,14 @@ interface TopNavProps {
   onNewIssue?: () => void
 }
 
-const navItems = [
+const baseNavItems = [
   { to: '/', label: 'Hot Sheet', icon: Flame, end: true },
   { to: '/costs', label: 'Costs', icon: DollarSign, end: false },
   { to: '/training', label: 'Training', icon: GraduationCap, end: true },
   { to: '/leaderboard', label: 'Board', icon: Trophy, end: false },
 ]
+
+const adminNavItem = { to: '/admin', label: 'Admin', icon: ShieldCheck, end: false }
 
 function DesktopNavItem({
   to,
@@ -94,6 +96,10 @@ export default function TopNav({ onNewIssue }: TopNavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
+
+  const navItems = profile?.is_training_admin
+    ? [...baseNavItems, adminNavItem]
+    : baseNavItems
 
   return (
     <header className="sticky top-0 z-30 overflow-visible">

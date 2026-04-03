@@ -456,6 +456,69 @@ export function useTraineeHistory(userId: string | undefined) {
   })
 }
 
+// ── Admin Queries ────────────────────────────────────────────────────────────
+
+import type { Profile } from '@/lib/types'
+
+async function fetchTeamProfiles(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('name', { ascending: true })
+
+  if (error) throw error
+  return data as Profile[]
+}
+
+export function useTeamProfiles() {
+  return useQuery({
+    queryKey: ['teamProfiles'],
+    queryFn: fetchTeamProfiles,
+    staleTime: 60_000,
+  })
+}
+
+async function fetchTeamDailySummaries(date: string): Promise<DailySummary[]> {
+  const { data, error } = await supabase
+    .from('daily_summaries')
+    .select('*')
+    .eq('date', date)
+
+  if (error) throw error
+  return data as DailySummary[]
+}
+
+export function useTeamDailySummaries(date: string) {
+  return useQuery({
+    queryKey: ['teamDailySummaries', date],
+    queryFn: () => fetchTeamDailySummaries(date),
+    staleTime: 30_000,
+  })
+}
+
+async function fetchTraineeSessions(userId: string): Promise<TrainingSession[]> {
+  const { data, error } = await supabase
+    .from('training_sessions')
+    .select('*, scenario:scenarios(*)')
+    .eq('trainee_id', userId)
+    .not('completed_at', 'is', null)
+    .not('score_overall', 'is', null)
+    .order('completed_at', { ascending: false })
+    .limit(30)
+
+  if (error) throw error
+  return data as TrainingSession[]
+}
+
+export function useTraineeSessions(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['traineeSessions', userId],
+    queryFn: () => fetchTraineeSessions(userId!),
+    enabled: !!userId,
+    staleTime: 30_000,
+  })
+}
+
 // ── In-Progress Session Detection ────────────────────────────────────────────
 
 async function fetchInProgressSession(userId: string): Promise<TrainingSession | null> {
