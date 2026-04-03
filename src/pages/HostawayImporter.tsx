@@ -147,19 +147,32 @@ function ImportRow({
             <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
               {/* Transcript preview */}
               <div className="max-h-60 overflow-y-auto themed-scroll space-y-2">
-                {(imp.raw_transcript ?? []).slice(0, 20).map((msg, i) => (
-                  <div key={i} className={cn('text-xs', msg.role === 'guest' ? 'text-text-secondary' : 'text-text-primary')}>
-                    <span className="text-[10px] text-text-muted font-medium uppercase">
-                      {msg.role === 'guest' ? 'Guest' : 'Host'}:
-                    </span>{' '}
-                    {msg.content}
-                  </div>
-                ))}
-                {(imp.raw_transcript ?? []).length > 20 && (
-                  <p className="text-[10px] text-text-muted italic">
-                    ...and {(imp.raw_transcript ?? []).length - 20} more messages
-                  </p>
-                )}
+                {(() => {
+                  // Handle both proper JSONB arrays and double-encoded JSON strings
+                  let transcript = imp.raw_transcript ?? []
+                  if (typeof transcript === 'string') {
+                    try { transcript = JSON.parse(transcript) } catch { transcript = [] }
+                  }
+                  if (!Array.isArray(transcript)) transcript = []
+                  const msgs = transcript as { role: string; content: string; timestamp?: string }[]
+                  return (
+                    <>
+                      {msgs.slice(0, 20).map((msg, i) => (
+                        <div key={i} className={cn('text-xs', msg.role === 'guest' ? 'text-text-secondary' : 'text-text-primary')}>
+                          <span className="text-[10px] text-text-muted font-medium uppercase">
+                            {msg.role === 'guest' ? 'Guest' : 'Host'}:
+                          </span>{' '}
+                          {msg.content}
+                        </div>
+                      ))}
+                      {msgs.length > 20 && (
+                        <p className="text-[10px] text-text-muted italic">
+                          ...and {msgs.length - 20} more messages
+                        </p>
+                      )}
+                    </>
+                  )
+                })()}
               </div>
 
               {/* Actions */}
