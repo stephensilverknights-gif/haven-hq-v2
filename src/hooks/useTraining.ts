@@ -295,6 +295,167 @@ export function useScenarioHistory(userId: string | undefined) {
   })
 }
 
+// ── Leaderboard & History ────────────────────────────────────────────────────
+
+export interface LeaderboardEntry {
+  trainee_id: string
+  name: string
+  initials: string
+  total_reps: number
+  avg_score: number | null
+  excellent_count: number
+  best_score: number | null
+}
+
+export type LeaderboardPeriod = 'today' | 'week' | 'all'
+
+function getDateRangeStart(period: LeaderboardPeriod): string | null {
+  if (period === 'all') return null
+  const d = new Date()
+  if (period === 'today') {
+    d.setHours(0, 0, 0, 0)
+  } else {
+    // Start of current week (Monday)
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+    d.setDate(diff)
+    d.setHours(0, 0, 0, 0)
+  }
+  return d.toISOString()
+}
+
+async function fetchLeaderboard(period: LeaderboardPeriod): Promise<LeaderboardEntry[]> {
+  // Fetch all completed sessions with profile data
+  let query = supabase
+    .from('training_sessions')
+    .select('trainee_id, score_overall, grade, completed_at, profiles!inner(name, initials)')
+    .not('completed_at', 'is', null)
+    .not('score_overall', 'is', null)
+
+  const rangeStart = getDateRangeStart(period)
+  if (rangeStart) {
+    query = query.gte('completed_at', rangeStart)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw error
+  if (!data || data.length === 0) return []
+
+  // Aggregate per trainee
+  const map = new Map<string, {
+    name: string
+    initials: string
+    scores: number[]
+    excellentCount: number
+  }>()
+
+  for (const row of data as any[]) {
+    const tid = row.trainee_id as string
+    const profile = row.profiles as { name: string; initials: string }
+    if (!map.has(tid)) {
+      map.set(tid, {
+        name: profile.name,
+        initials: profile.initials,
+        scores: [],
+        excellentCount: 0,
+      })
+    }
+    const entry = map.get(tid)!
+    if (row.score_overall != null) {
+      entry.scores.push(row.score_overall as number)
+    }
+    if (row.grade === 'Excellent') {
+      entry.excellentCount++
+    }
+  }
+
+  const entries: LeaderboardEntry[] = []
+  for (const [tid, v] of map) {
+    const avg = v.scores.length > 0
+      ? Math.round((v.scores.reduce((a, b) => a + b, 0) / v.scores.length) * 10) / 10
+      : null
+    const best = v.scores.length > 0 ? Math.max(...v.scores) : null
+    entries.push({
+      trainee_id: tid,
+      name: v.name,
+      initials: v.initials,
+      total_reps: v.scores.length,
+      avg_score: avg,
+      excellent_count: v.excellentCount,
+      best_score: best,
+    })
+  }
+
+  // Sort by avg_score desc, then total_reps desc
+  entries.sort((a, b) => {
+    if ((b.avg_score ?? 0) !== (a.avg_score ?? 0)) return (b.avg_score ?? 0) - (a.avg_score ?? 0)
+    return b.total_reps - a.total_reps
+  })
+
+  return entries
+}
+
+export function useLeaderboard(period: LeaderboardPeriod) {
+  return useQuery({
+    queryKey: ['leaderboard', period],
+    queryFn: () => fetchLeaderboard(period),
+    staleTime: 30_000,
+  })
+}
+
+export interface HistorySession {
+  id: string
+  scenario_title: string
+  difficulty: string
+  score_overall: number | null
+  grade: string | null
+  exchange_count: number
+  completed_at: string
+  score_empathy: number | null
+  score_action: number | null
+  score_tone: number | null
+  score_resolution: number | null
+  score_no_policy: number | null
+}
+
+async function fetchTraineeHistory(userId: string): Promise<HistorySession[]> {
+  const { data, error } = await supabase
+    .from('training_sessions')
+    .select('id, score_overall, grade, exchange_count, completed_at, score_empathy, score_action, score_tone, score_resolution, score_no_policy, scenario:scenarios(title, difficulty)')
+    .eq('trainee_id', userId)
+    .not('completed_at', 'is', null)
+    .not('score_overall', 'is', null)
+    .order('completed_at', { ascending: false })
+    .limit(50)
+
+  if (error) throw error
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    scenario_title: row.scenario?.title ?? 'Unknown',
+    difficulty: row.scenario?.difficulty ?? 'medium',
+    score_overall: row.score_overall,
+    grade: row.grade,
+    exchange_count: row.exchange_count ?? 0,
+    completed_at: row.completed_at,
+    score_empathy: row.score_empathy,
+    score_action: row.score_action,
+    score_tone: row.score_tone,
+    score_resolution: row.score_resolution,
+    score_no_policy: row.score_no_policy,
+  }))
+}
+
+export function useTraineeHistory(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['traineeHistory', userId],
+    queryFn: () => fetchTraineeHistory(userId!),
+    enabled: !!userId,
+    staleTime: 30_000,
+  })
+}
+
 // ── In-Progress Session Detection ────────────────────────────────────────────
 
 async function fetchInProgressSession(userId: string): Promise<TrainingSession | null> {

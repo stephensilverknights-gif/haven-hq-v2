@@ -7,6 +7,7 @@ import Settings from '@/pages/Settings'
 import Training from '@/pages/Training'
 import TrainingSession from '@/pages/TrainingSession'
 import TrainingComplete from '@/pages/TrainingComplete'
+import Leaderboard from '@/pages/Leaderboard'
 import type { ReactNode } from 'react'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -76,6 +77,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <TrainingComplete />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/leaderboard"
+        element={
+          <ProtectedRoute>
+            <Leaderboard />
           </ProtectedRoute>
         }
       />
