@@ -120,7 +120,7 @@ function IssueGroup({
         <div className="flex-1 h-px bg-border ml-1" />
       </div>
 
-      <div className="grid gap-2 mb-1 min-w-0">
+      <div className="grid grid-cols-1 gap-2 mb-1 min-w-0">
         {issues.map((issue, i) => (
           <motion.div
             key={issue.id}
@@ -320,7 +320,7 @@ export default function HotSheet() {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="grid gap-2 overflow-hidden"
+                          className="grid grid-cols-1 gap-2 overflow-hidden"
                         >
                           {resolvedIssues.map((issue) => (
                             <div key={issue.id} className="opacity-60">
@@ -342,7 +342,7 @@ export default function HotSheet() {
 
                 {/* Resolved — shown prominently when "Resolved" filter is active */}
                 {showingResolved && resolvedIssues.length > 0 && (
-                  <div className="grid gap-2">
+                  <div className="grid grid-cols-1 gap-2">
                     <p className="text-sm font-medium text-text-secondary mb-1">
                       Resolved ({resolvedIssues.length})
                     </p>
