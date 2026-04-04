@@ -95,7 +95,7 @@ export default function IssueRow({
         )}
 
         {/* Row 3: status + checklist progress + time */}
-        <div className="flex items-center justify-between mt-2 gap-2 min-w-0">
+        <div className="flex items-center justify-between mt-2 gap-2 min-w-0 overflow-hidden">
           <div className="flex items-center gap-2 min-w-0 overflow-hidden">
             {/* Status */}
             <div className="flex items-center gap-1">
@@ -113,7 +113,7 @@ export default function IssueRow({
               <div className="flex items-center gap-1.5">
                 <span className="text-text-muted">·</span>
                 <div className="flex items-center gap-1">
-                  <div className="w-16 h-[3px] bg-surface rounded-full overflow-hidden">
+                  <div className="w-10 sm:w-16 h-[3px] bg-surface rounded-full overflow-hidden">
                     <div
                       className="h-full bg-haven-indigo rounded-full transition-all duration-300"
                       style={{
@@ -130,7 +130,7 @@ export default function IssueRow({
           </div>
 
           {/* Time */}
-          <div className="shrink-0 text-right">
+          <div className="min-w-0 sm:shrink-0 text-right">
             {isOnFire ? (
               <ElapsedTimer startTime={issue.created_at} priority={issue.priority} />
             ) : (
