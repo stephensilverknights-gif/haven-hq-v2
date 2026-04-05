@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Pencil, Trash2, GripVertical, X, ChevronRight, Building2, MapPin, ChevronDown, Settings2 } from 'lucide-react'
 import TopNav from '@/components/TopNav'
+import NeonButton from '@/components/NeonButton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -60,15 +61,14 @@ function PropertyForm({
         </div>
       </div>
       <div className="flex gap-2">
-        <Button
+        <NeonButton
           size="sm"
+          withBloom={false}
           onClick={() => onSave(name.trim(), market)}
           disabled={!valid || isSaving}
-          className="rounded-[8px]"
-          style={{ backgroundColor: '#5B5BD6' }}
         >
           {isSaving ? 'Saving…' : initial ? 'Save' : 'Add Property'}
-        </Button>
+        </NeonButton>
         <Button size="sm" variant="outline" onClick={onCancel} className="rounded-[8px]">
           Cancel
         </Button>
@@ -147,7 +147,13 @@ function MarketGroup({
   const activeCount = properties.filter(p => p.active).length
 
   return (
-    <div className="border border-border rounded-[12px] overflow-hidden">
+    <div
+      className="rounded-[12px] overflow-hidden"
+      style={{
+        border: '1px solid rgba(123,124,248,0.22)',
+        boxShadow: 'inset 0 0 0 1px rgba(123,124,248,0.04)',
+      }}
+    >
       {/* Header */}
       <button
         onClick={() => setOpen(!open)}
@@ -260,7 +266,13 @@ function ManageMarkets({ allProperties }: { allProperties: Property[] | undefine
   }
 
   return (
-    <div className="border border-border rounded-[12px] overflow-hidden mb-4">
+    <div
+      className="rounded-[12px] overflow-hidden mb-4"
+      style={{
+        border: '1px solid rgba(123,124,248,0.22)',
+        boxShadow: 'inset 0 0 0 1px rgba(123,124,248,0.04)',
+      }}
+    >
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-2.5 px-4 py-3 bg-surface hover:bg-surface-hover transition-colors text-left"
@@ -293,16 +305,16 @@ function ManageMarkets({ allProperties }: { allProperties: Property[] | undefine
                   placeholder="New market name…"
                   className="rounded-[8px] text-sm flex-1 h-9"
                 />
-                <Button
+                <NeonButton
                   size="sm"
+                  withBloom={false}
                   onClick={handleAdd}
                   disabled={!newName.trim() || createMarket.isPending}
-                  className="rounded-[8px] gap-1 shrink-0 h-9"
-                  style={{ backgroundColor: '#5B5BD6' }}
+                  className="h-9 gap-1 shrink-0 flex items-center"
                 >
                   <Plus size={13} strokeWidth={1.5} />
                   Add
-                </Button>
+                </NeonButton>
               </div>
 
               {/* Market list */}
@@ -507,15 +519,14 @@ function TemplateForm({
         <StepEditor steps={steps} onChange={setSteps} />
       </div>
       <div className="flex gap-2 pt-1">
-        <Button
+        <NeonButton
           size="sm"
+          withBloom={false}
           onClick={() => onSave(name.trim(), description.trim(), steps)}
           disabled={!valid || isSaving}
-          className="rounded-[8px]"
-          style={{ backgroundColor: '#5B5BD6' }}
         >
           {isSaving ? 'Saving…' : initial ? 'Save Changes' : 'Create Template'}
-        </Button>
+        </NeonButton>
         <Button size="sm" variant="outline" onClick={onCancel} className="rounded-[8px]">
           Cancel
         </Button>
@@ -701,15 +712,15 @@ export default function Settings() {
               </p>
             </div>
             {!creatingTemplate && (
-              <Button
+              <NeonButton
                 size="sm"
+                withBloom={false}
                 onClick={() => { setCreatingTemplate(true); setEditingTemplateId(null) }}
-                className="rounded-[8px] gap-1.5 shrink-0"
-                style={{ backgroundColor: '#5B5BD6' }}
+                className="gap-1.5 shrink-0 flex items-center"
               >
                 <Plus size={14} strokeWidth={1.5} />
                 New Template
-              </Button>
+              </NeonButton>
             )}
           </div>
 

@@ -78,32 +78,97 @@ export default function CostsView() {
       <TopNav onNewIssue={() => {}} />
 
       <main className="max-w-6xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
-        <h2 className="text-xl font-semibold text-text-primary mb-4">Costs</h2>
+        <h2
+          className="text-xl font-semibold text-text-primary mb-4"
+          style={{ textShadow: '0 0 12px rgba(123,124,248,0.3)' }}
+        >
+          Costs
+        </h2>
 
         {/* Summary tiles */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
-          <div className="bg-card-bg rounded-[12px] border border-border p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <DollarSign size={16} strokeWidth={1.5} className="text-text-muted" />
-              <span className="text-sm text-text-secondary">Total Spend</span>
+          {/* Total Spend — indigo neon */}
+          <div className="relative group">
+            <div
+              aria-hidden
+              className="absolute -inset-[2px] rounded-[14px] opacity-25 group-hover:opacity-45 transition-opacity duration-200 blur-xl pointer-events-none"
+              style={{ background: 'rgba(123,124,248,0.25)' }}
+            />
+            <div
+              className="relative bg-card-bg rounded-[12px] p-4"
+              style={{
+                border: '1px solid rgba(123,124,248,0.3)',
+                boxShadow:
+                  '0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(123,124,248,0.05)',
+              }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign
+                  size={16}
+                  strokeWidth={1.5}
+                  color="#9596FF"
+                  style={{ filter: 'drop-shadow(0 0 3px rgba(123,124,248,0.5))' }}
+                />
+                <span className="text-sm text-text-secondary">Total Spend</span>
+              </div>
+              <span
+                className="text-2xl font-bold"
+                style={{
+                  color: '#E8E8F2',
+                  textShadow: '0 0 12px rgba(123,124,248,0.3)',
+                }}
+              >
+                ${summary.total.toFixed(2)}
+              </span>
             </div>
-            <span className="text-2xl font-bold text-text-primary">
-              ${summary.total.toFixed(2)}
-            </span>
           </div>
-          <div className="bg-card-bg rounded-[12px] border border-border p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <DollarSign size={16} strokeWidth={1.5} className="text-amber-500" />
-              <span className="text-sm text-text-secondary">Reimbursable Pending</span>
+
+          {/* Reimbursable Pending — amber neon */}
+          <div className="relative group">
+            <div
+              aria-hidden
+              className="absolute -inset-[2px] rounded-[14px] opacity-25 group-hover:opacity-45 transition-opacity duration-200 blur-xl pointer-events-none"
+              style={{ background: 'rgba(251,191,36,0.25)' }}
+            />
+            <div
+              className="relative bg-card-bg rounded-[12px] p-4"
+              style={{
+                border: '1px solid rgba(217,119,6,0.35)',
+                boxShadow:
+                  '0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(217,119,6,0.06)',
+              }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign
+                  size={16}
+                  strokeWidth={1.5}
+                  color="#FBBF24"
+                  style={{ filter: 'drop-shadow(0 0 3px rgba(251,191,36,0.5))' }}
+                />
+                <span className="text-sm text-text-secondary">Reimbursable Pending</span>
+              </div>
+              <span
+                className="text-2xl font-bold"
+                style={{
+                  color: '#E8E8F2',
+                  textShadow: '0 0 12px rgba(251,191,36,0.3)',
+                }}
+              >
+                ${summary.reimbursable.toFixed(2)}
+              </span>
             </div>
-            <span className="text-2xl font-bold text-text-primary">
-              ${summary.reimbursable.toFixed(2)}
-            </span>
           </div>
         </div>
 
         {/* Table */}
-        <div className="bg-card-bg rounded-[12px] border border-border overflow-hidden">
+        <div
+          className="bg-card-bg rounded-[12px] overflow-hidden"
+          style={{
+            border: '1px solid rgba(123,124,248,0.22)',
+            boxShadow:
+              '0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(123,124,248,0.05)',
+          }}
+        >
           {isLoading ? (
             <p className="text-text-muted text-center py-10">Loading...</p>
           ) : !entries || entries.length === 0 ? (
@@ -166,7 +231,17 @@ export default function CostsView() {
                     </TableCell>
                     <TableCell className="text-sm">
                       {entry.reimbursable !== 'none' ? (
-                        <span className="text-amber-700 text-xs font-medium bg-amber-50 px-2 py-0.5 rounded-[20px] border border-amber-200">
+                        <span
+                          className="text-xs font-medium px-2 py-0.5 rounded-[20px]"
+                          style={{
+                            background: 'rgba(251,191,36,0.12)',
+                            color: '#FBBF24',
+                            border: '1px solid rgba(217,119,6,0.35)',
+                            textShadow: '0 0 4px rgba(217,119,6,0.4)',
+                            boxShadow:
+                              '0 0 6px rgba(217,119,6,0.15), inset 0 0 3px rgba(217,119,6,0.06)',
+                          }}
+                        >
                           {REIMBURSABLE_LABELS[entry.reimbursable as Reimbursable]}
                         </span>
                       ) : (

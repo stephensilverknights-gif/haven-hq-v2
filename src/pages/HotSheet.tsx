@@ -22,30 +22,40 @@ import type { Issue, Priority, IssueType } from '@/lib/types'
 import { ISSUE_TYPE_LABELS, PRIORITY_LABELS } from '@/lib/types'
 
 function SummaryStrip({ counts }: { counts: { on_fire: number; urgent: number; watch: number } }) {
+  const items = [
+    { icon: Flame, count: counts.on_fire, label: 'On Fire',  color: '#FF6B6B', shadow: 'rgba(239,68,68' },
+    { icon: Clock, count: counts.urgent,  label: 'Important', color: '#FBBF24', shadow: 'rgba(217,119,6' },
+    { icon: Eye,   count: counts.watch,   label: 'Upcoming', color: '#34D399', shadow: 'rgba(52,211,153' },
+  ]
   return (
     <motion.div
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="flex items-center flex-wrap gap-x-4 gap-y-2 mb-4"
+      className="flex items-center flex-wrap gap-x-3 gap-y-2 mb-4"
     >
-      <div className="flex items-center gap-2">
-        <Flame size={13} strokeWidth={1.5} className="text-fire-text" />
-        <span className="text-[13px] font-bold text-fire-text">{counts.on_fire}</span>
-        <span className="text-[12px] text-text-muted">On Fire</span>
-      </div>
-      <span className="text-text-muted opacity-30">·</span>
-      <div className="flex items-center gap-2">
-        <Clock size={13} strokeWidth={1.5} className="text-urgent-text" />
-        <span className="text-[13px] font-bold text-urgent-text">{counts.urgent}</span>
-        <span className="text-[12px] text-text-muted">Important</span>
-      </div>
-      <span className="text-text-muted opacity-30">·</span>
-      <div className="flex items-center gap-2">
-        <Eye size={13} strokeWidth={1.5} className="text-watch-text" />
-        <span className="text-[13px] font-bold text-watch-text">{counts.watch}</span>
-        <span className="text-[12px] text-text-muted">Upcoming</span>
-      </div>
+      {items.map(({ icon: Icon, count, label, color, shadow }, i) => (
+        <div key={label} className="flex items-center">
+          <div className="flex items-center gap-1.5">
+            <Icon
+              size={13}
+              strokeWidth={1.5}
+              color={color}
+              style={{ filter: `drop-shadow(0 0 3px ${color})` }}
+            />
+            <span
+              className="text-[13px] font-bold"
+              style={{ color, textShadow: `0 0 6px ${shadow},0.4)` }}
+            >
+              {count}
+            </span>
+            <span className="text-[12px] text-text-muted">{label}</span>
+          </div>
+          {i < items.length - 1 && (
+            <span className="text-text-muted opacity-30 ml-3">·</span>
+          )}
+        </div>
+      ))}
     </motion.div>
   )
 }
@@ -55,11 +65,27 @@ const priorityGroups: {
   icon: typeof Flame
   labelClass: string
   dotColor: string
+  shimmer: string
   label: string
 }[] = [
-  { priority: 'on_fire', icon: Flame, labelClass: 'text-fire-text',   dotColor: '#EF4444', label: 'On Fire' },
-  { priority: 'urgent',  icon: Clock, labelClass: 'text-urgent-text', dotColor: '#D97706', label: 'Important' },
-  { priority: 'watch',   icon: Eye,   labelClass: 'text-watch-text',  dotColor: '#059669', label: 'Upcoming' },
+  {
+    priority: 'on_fire', icon: Flame, labelClass: 'text-fire-text',
+    dotColor: '#FF6B6B',
+    shimmer: 'linear-gradient(90deg,transparent,rgba(239,68,68,0.35) 30%,rgba(239,68,68,0.15) 70%,transparent)',
+    label: 'On Fire',
+  },
+  {
+    priority: 'urgent', icon: Clock, labelClass: 'text-urgent-text',
+    dotColor: '#FBBF24',
+    shimmer: 'linear-gradient(90deg,transparent,rgba(251,191,36,0.3) 30%,rgba(251,191,36,0.12) 70%,transparent)',
+    label: 'Important',
+  },
+  {
+    priority: 'watch', icon: Eye, labelClass: 'text-watch-text',
+    dotColor: '#34D399',
+    shimmer: 'linear-gradient(90deg,transparent,rgba(52,211,153,0.25) 30%,rgba(52,211,153,0.1) 70%,transparent)',
+    label: 'Upcoming',
+  },
 ]
 
 function IssueGroup({
@@ -67,6 +93,7 @@ function IssueGroup({
   icon: Icon,
   labelClass,
   dotColor,
+  shimmer,
   label,
   issues,
   lastNotes,
@@ -80,6 +107,7 @@ function IssueGroup({
   labelClass: string
   dotColor: string
   label: string
+  shimmer: string
   issues: Issue[]
   lastNotes: Record<string, { note: string; author: string } | undefined>
   costEntriesByIssue: Record<string, CostEntry[]>
@@ -96,13 +124,30 @@ function IssueGroup({
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
     >
       <div className="flex items-center gap-2 mb-2">
-        <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
-        <Icon size={12} strokeWidth={1.5} className={labelClass} />
-        <span className={`text-[11px] font-semibold uppercase tracking-wider ${labelClass}`}>
+        <span
+          className="w-[5px] h-[5px] rounded-full shrink-0"
+          style={{
+            backgroundColor: dotColor,
+            boxShadow: `0 0 6px ${dotColor}, 0 0 2px ${dotColor}`,
+          }}
+        />
+        <Icon
+          size={12}
+          strokeWidth={1.5}
+          className={labelClass}
+          style={{ filter: `drop-shadow(0 0 3px ${dotColor})` }}
+        />
+        <span
+          className={`text-[11px] font-semibold uppercase tracking-wider ${labelClass}`}
+          style={{ textShadow: `0 0 6px ${dotColor}59` }}
+        >
           {label}
         </span>
         <span className="text-[11px] text-text-muted">· {issues.length}</span>
-        <div className="flex-1 h-px bg-border ml-1" />
+        <div
+          className="flex-1 h-px ml-1"
+          style={{ background: shimmer }}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-2 mb-1 min-w-0">
@@ -276,13 +321,14 @@ export default function HotSheet() {
                   <>
                     <SummaryStrip counts={counts} />
                     <div className="flex flex-col gap-5">
-                      {priorityGroups.map(({ priority, icon, labelClass, dotColor, label }) => (
+                      {priorityGroups.map(({ priority, icon, labelClass, dotColor, shimmer, label }) => (
                         <IssueGroup
                           key={priority}
                           priority={priority}
                           icon={icon}
                           labelClass={labelClass}
                           dotColor={dotColor}
+                          shimmer={shimmer}
                           label={label}
                           issues={grouped[priority]}
                           lastNotes={lastNotes}
