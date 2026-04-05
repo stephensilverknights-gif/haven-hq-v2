@@ -177,7 +177,15 @@ export default function CostEntry({ issueId }: CostEntryProps) {
 
       {/* Add form */}
       {showForm && (
-        <div className="bg-surface border border-border rounded-[10px] p-3 mb-3 space-y-3">
+        <div
+          className="rounded-[10px] p-3 mb-3 space-y-3"
+          style={{
+            background: 'rgba(22,22,36,0.6)',
+            border: '1px solid rgba(123,124,248,0.25)',
+            boxShadow:
+              '0 0 12px rgba(123,124,248,0.1), inset 0 0 8px rgba(123,124,248,0.03)',
+          }}
+        >
 
           {/* Entry type pills */}
           <div>
@@ -199,8 +207,9 @@ export default function CostEntry({ issueId }: CostEntryProps) {
                     )}
                     style={isSelected ? {
                       backgroundColor: color + '15',
-                      borderColor: color + '60',
+                      borderColor: color + 'B3',
                       color,
+                      boxShadow: `0 0 8px ${color}40, inset 0 0 6px ${color}1A`,
                     } : {}}
                   >
                     <Icon size={13} strokeWidth={1.5} className="mt-0.5 shrink-0" />
@@ -268,15 +277,20 @@ export default function CostEntry({ issueId }: CostEntryProps) {
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button
-              size="sm"
+            <button
               onClick={handleSubmit}
               disabled={!canSubmit || isSaving}
-              className="rounded-[8px] min-h-[44px] sm:min-h-0"
-              style={{ backgroundColor: '#7B7CF8' }}
+              className="rounded-[8px] min-h-[44px] sm:min-h-[36px] px-4 text-[13px] font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] disabled:hover:scale-100"
+              style={{
+                background: 'rgba(123,124,248,0.14)',
+                color: '#9596FF',
+                border: '1.5px solid rgba(123,124,248,0.7)',
+                boxShadow:
+                  '0 0 8px rgba(123,124,248,0.3), inset 0 0 6px rgba(123,124,248,0.08)',
+              }}
             >
               {isSaving ? 'Saving…' : editingId ? 'Update Entry' : 'Save Entry'}
-            </Button>
+            </button>
             <Button
               size="sm"
               variant="outline"
@@ -299,18 +313,33 @@ export default function CostEntry({ issueId }: CostEntryProps) {
             return (
               <div
                 key={entry.id}
-                className="flex items-start justify-between bg-surface rounded-[8px] px-3 py-2.5 gap-2"
+                className="flex items-start justify-between rounded-[8px] px-3 py-2.5 gap-2"
+                style={{
+                  background: 'rgba(22,22,36,0.5)',
+                  border: '1px solid rgba(123,124,248,0.14)',
+                  boxShadow: 'inset 0 0 6px rgba(123,124,248,0.03)',
+                }}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
                     <span className="text-[13px] font-semibold text-text-primary">
                       ${Number(entry.amount).toFixed(2)}
                     </span>
-                    <span className={cn(
-                      'inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px] border',
-                      cfg.badgeCn
-                    )}>
-                      <cfg.icon size={9} strokeWidth={2} />
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px] border',
+                        cfg.badgeCn
+                      )}
+                      style={{
+                        textShadow: `0 0 4px ${cfg.color}66`,
+                        boxShadow: `0 0 6px ${cfg.color}26, inset 0 0 3px ${cfg.color}14`,
+                      }}
+                    >
+                      <cfg.icon
+                        size={9}
+                        strokeWidth={2}
+                        style={{ filter: `drop-shadow(0 0 2px ${cfg.color})` }}
+                      />
                       {cfg.label}
                     </span>
                     {entry.vendor_name && (

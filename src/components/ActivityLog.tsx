@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { ArrowRight, Send } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import UserAvatar from '@/components/UserAvatar'
 import StatusBadge from '@/components/StatusBadge'
@@ -50,15 +49,20 @@ export default function ActivityLog({ issueId }: ActivityLogProps) {
             }
           }}
         />
-        <Button
+        <button
           onClick={handleAddNote}
           disabled={!newNote.trim() || addNote.isPending}
-          size="sm"
-          className="rounded-[8px] shrink-0 self-end min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
-          style={{ backgroundColor: '#7B7CF8' }}
+          className="rounded-[8px] shrink-0 self-end min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.04] disabled:hover:scale-100"
+          style={{
+            background: 'rgba(123,124,248,0.14)',
+            color: '#9596FF',
+            border: '1.5px solid rgba(123,124,248,0.7)',
+            boxShadow:
+              '0 0 8px rgba(123,124,248,0.3), inset 0 0 6px rgba(123,124,248,0.08)',
+          }}
         >
           <Send size={14} strokeWidth={1.5} />
-        </Button>
+        </button>
       </div>
 
       {/* Log entries */}
@@ -74,9 +78,16 @@ export default function ActivityLog({ issueId }: ActivityLogProps) {
               transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1], delay: i * 0.03 }}
               className="relative flex gap-3 pb-4"
             >
-              {/* Timeline line */}
+              {/* Timeline line — indigo-tinted spine */}
               {i < (entries?.length ?? 0) - 1 && (
-                <div className="absolute left-[13px] top-7 bottom-0 w-px bg-border" />
+                <div
+                  className="absolute left-[13px] top-7 bottom-0 w-px"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(123,124,248,0.35) 0%, rgba(123,124,248,0.15) 100%)',
+                    boxShadow: '0 0 3px rgba(123,124,248,0.2)',
+                  }}
+                />
               )}
 
               {entry.user && (
@@ -93,7 +104,14 @@ export default function ActivityLog({ issueId }: ActivityLogProps) {
                 </div>
 
                 {entry.status_from && entry.status_to && (
-                  <div className="flex items-center gap-1.5 mb-1.5 p-1.5 bg-surface rounded-[6px] w-fit">
+                  <div
+                    className="flex items-center gap-1.5 mb-1.5 p-1.5 rounded-[6px] w-fit"
+                    style={{
+                      background: 'rgba(123,124,248,0.06)',
+                      border: '1px solid rgba(123,124,248,0.2)',
+                      boxShadow: 'inset 0 0 6px rgba(123,124,248,0.04)',
+                    }}
+                  >
                     <StatusBadge status={entry.status_from as IssueStatus} />
                     <ArrowRight size={11} className="text-text-muted shrink-0" />
                     <StatusBadge status={entry.status_to as IssueStatus} />

@@ -565,23 +565,23 @@ function IssueDetailContent({
           {/* Cost Entries */}
           <CostEntry issueId={issue.id} />
 
-          {/* Resolve Button — neon teal glow */}
+          {/* Resolve Button — neon teal glow (50% intensity) */}
           {issue.status !== 'resolved' && (
             <div className="pt-2 relative group">
               <div
                 aria-hidden
-                className="absolute -inset-2 rounded-[12px] opacity-40 group-hover:opacity-80 transition-opacity duration-200 blur-xl pointer-events-none"
-                style={{ background: 'rgba(52,211,153,0.35)' }}
+                className="absolute -inset-1 rounded-[10px] opacity-20 group-hover:opacity-40 transition-opacity duration-200 blur-xl pointer-events-none"
+                style={{ background: 'rgba(52,211,153,0.18)' }}
               />
               <button
                 onClick={() => handleStatusChange('resolved')}
                 className="relative w-full rounded-[8px] min-h-[44px] text-[13px] font-semibold transition-all duration-200 hover:scale-[1.005]"
                 style={{
-                  background: 'rgba(52,211,153,0.12)',
+                  background: 'rgba(52,211,153,0.1)',
                   color: '#34D399',
-                  border: '1.5px solid rgba(52,211,153,0.6)',
+                  border: '1.5px solid rgba(52,211,153,0.5)',
                   boxShadow:
-                    '0 0 10px rgba(52,211,153,0.35), 0 0 24px rgba(52,211,153,0.15), inset 0 0 10px rgba(52,211,153,0.08)',
+                    '0 0 5px rgba(52,211,153,0.18), 0 0 12px rgba(52,211,153,0.08), inset 0 0 5px rgba(52,211,153,0.04)',
                 }}
               >
                 Resolve Task
