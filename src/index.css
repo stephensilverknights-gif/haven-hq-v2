@@ -105,6 +105,24 @@
 .issue-card[data-priority="urgent"]:not([data-selected="true"]):hover  { animation: glow-urgent 1.4s ease-in-out infinite; }
 .issue-card[data-priority="watch"]:not([data-selected="true"]):hover   { animation: glow-watch  1.4s ease-in-out infinite; }
 
+/* IssueCardV2 resting bloom — stays subtle, slightly animates on hover.
+   The big visible pulse is the hover-only .v2-bloom-hover layer below. */
+@keyframes v2-bloom-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(1.02); }
+}
+.group:hover .v2-bloom { animation: v2-bloom-pulse 1.4s ease-in-out infinite; }
+
+/* IssueCardV2 hover glow — a dedicated halo that only exists on hover.
+   Invisible at rest (opacity: 0), pulses gently on hover at 25% intensity.
+   Scales 1.0 → 1.015 for subtle breathing motion. GPU-composited. */
+@keyframes v2-hover-glow {
+  0%, 100% { opacity: 0.09; transform: scale(1);     }
+  50%      { opacity: 0.22; transform: scale(1.015); }
+}
+.v2-bloom-hover { opacity: 0; transition: opacity 0.2s ease-out; }
+.group:hover .v2-bloom-hover { animation: v2-hover-glow 1.4s ease-in-out infinite; }
+
 /* Typing indicator dots */
 @keyframes typing-dot {
   0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }

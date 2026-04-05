@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Flame, Clock, Eye, ChevronDown } from 'lucide-react'
 import TopNav from '@/components/TopNav'
-import IssueRow from '@/components/IssueRow'
+import IssueCardV2 from '@/components/IssueCardV2'
 import NewIssueModal from '@/components/NewIssueModal'
 import IssueDetail from '@/components/IssueDetail'
 import {
@@ -14,29 +14,12 @@ import {
 } from '@/components/ui/select'
 import { useIssues } from '@/hooks/useIssues'
 import { useProperties } from '@/hooks/useProperties'
-import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { useAllCostEntries } from '@/hooks/useCostEntries'
+import { useLastCompletedChecklist } from '@/hooks/useLastCompletedChecklist'
+import { toIssueCardV2Props } from '@/lib/toIssueCardV2Props'
+import type { CostEntry } from '@/lib/types'
 import type { Issue, Priority, IssueType } from '@/lib/types'
 import { ISSUE_TYPE_LABELS, PRIORITY_LABELS } from '@/lib/types'
-
-function useChecklistProgressMap() {
-  return useQuery({
-    queryKey: ['checklistProgress'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('issue_checklist_items')
-        .select('issue_id, completed')
-      if (error) throw error
-      const map: Record<string, { completed: number; total: number }> = {}
-      for (const row of data ?? []) {
-        if (!map[row.issue_id]) map[row.issue_id] = { completed: 0, total: 0 }
-        map[row.issue_id].total++
-        if (row.completed) map[row.issue_id].completed++
-      }
-      return map
-    },
-  })
-}
 
 function SummaryStrip({ counts }: { counts: { on_fire: number; urgent: number; watch: number } }) {
   return (
@@ -87,7 +70,8 @@ function IssueGroup({
   label,
   issues,
   lastNotes,
-  progressMap,
+  costEntriesByIssue,
+  lastCompletedByIssue,
   selectedId,
   onSelect,
 }: {
@@ -98,7 +82,8 @@ function IssueGroup({
   label: string
   issues: Issue[]
   lastNotes: Record<string, { note: string; author: string } | undefined>
-  progressMap: Record<string, { completed: number; total: number }>
+  costEntriesByIssue: Record<string, CostEntry[]>
+  lastCompletedByIssue: Record<string, import('@/hooks/useLastCompletedChecklist').LastCompletedChecklistItem> | undefined
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
@@ -128,11 +113,12 @@ function IssueGroup({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1], delay: i * 0.03 }}
           >
-            <IssueRow
-              issue={issue}
-              lastNote={lastNotes[issue.id]?.note}
-              lastNoteAuthor={lastNotes[issue.id]?.author}
-              checklistProgress={progressMap[issue.id] ?? null}
+            <IssueCardV2
+              {...toIssueCardV2Props(issue, {
+                costEntries: costEntriesByIssue[issue.id],
+                lastCompletedChecklistItem: lastCompletedByIssue?.[issue.id],
+                lastNote: lastNotes[issue.id],
+              })}
               isSelected={selectedId === issue.id}
               onClick={() => onSelect(issue.id)}
             />
@@ -155,7 +141,17 @@ export default function HotSheet() {
   const [filterType, setFilterType] = useState<string>('all')
   const [filterProperty, setFilterProperty] = useState<string>('all')
 
-  const { data: progressMap = {} } = useChecklistProgressMap()
+  const { data: allCostEntries } = useAllCostEntries()
+  const { data: lastCompletedByIssue } = useLastCompletedChecklist()
+
+  const costEntriesByIssue = useMemo(() => {
+    const map: Record<string, CostEntry[]> = {}
+    for (const c of allCostEntries ?? []) {
+      if (!map[c.issue_id]) map[c.issue_id] = []
+      map[c.issue_id].push(c)
+    }
+    return map
+  }, [allCostEntries])
 
   const showingResolved = filterPriority === 'resolved'
 
@@ -290,7 +286,8 @@ export default function HotSheet() {
                           label={label}
                           issues={grouped[priority]}
                           lastNotes={lastNotes}
-                          progressMap={progressMap}
+                          costEntriesByIssue={costEntriesByIssue}
+                          lastCompletedByIssue={lastCompletedByIssue}
                           selectedId={selectedIssueId}
                           onSelect={setSelectedIssueId}
                         />
@@ -323,16 +320,16 @@ export default function HotSheet() {
                           className="grid grid-cols-1 gap-2 overflow-hidden"
                         >
                           {resolvedIssues.map((issue) => (
-                            <div key={issue.id} className="opacity-60">
-                              <IssueRow
-                                issue={issue}
-                                lastNote={lastNotes[issue.id]?.note}
-                                lastNoteAuthor={lastNotes[issue.id]?.author}
-                                checklistProgress={progressMap[issue.id] ?? null}
-                                isSelected={selectedIssueId === issue.id}
-                                onClick={() => setSelectedIssueId(issue.id)}
-                              />
-                            </div>
+                            <IssueCardV2
+                              key={issue.id}
+                              {...toIssueCardV2Props(issue, {
+                                costEntries: costEntriesByIssue[issue.id],
+                                lastCompletedChecklistItem: lastCompletedByIssue?.[issue.id],
+                                lastNote: lastNotes[issue.id],
+                              })}
+                              isSelected={selectedIssueId === issue.id}
+                              onClick={() => setSelectedIssueId(issue.id)}
+                            />
                           ))}
                         </motion.div>
                       )}
@@ -347,12 +344,13 @@ export default function HotSheet() {
                       Resolved ({resolvedIssues.length})
                     </p>
                     {resolvedIssues.map((issue) => (
-                      <IssueRow
+                      <IssueCardV2
                         key={issue.id}
-                        issue={issue}
-                        lastNote={lastNotes[issue.id]?.note}
-                        lastNoteAuthor={lastNotes[issue.id]?.author}
-                        checklistProgress={progressMap[issue.id] ?? null}
+                        {...toIssueCardV2Props(issue, {
+                          costEntries: costEntriesByIssue[issue.id],
+                          lastCompletedChecklistItem: lastCompletedByIssue?.[issue.id],
+                          lastNote: lastNotes[issue.id],
+                        })}
                         isSelected={selectedIssueId === issue.id}
                         onClick={() => setSelectedIssueId(issue.id)}
                       />
