@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import NeonButton from '@/components/NeonButton'
 
 export default function Login() {
   const { session, loading, signIn, signUp } = useAuth()
@@ -43,11 +43,30 @@ export default function Login() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-page-bg">
-      <Card className="w-full max-w-[400px] mx-4 shadow-lg border-border">
+      <div className="relative w-full max-w-[400px] mx-4">
+        {/* Outer bloom halo — first-impression indigo glow */}
+        <div
+          aria-hidden
+          className="absolute -inset-3 rounded-[20px] opacity-40 blur-2xl pointer-events-none"
+          style={{ background: 'rgba(123,124,248,0.3)' }}
+        />
+        <Card
+          className="relative"
+          style={{
+            background: '#101019',
+            border: '1px solid rgba(123,124,248,0.35)',
+            boxShadow:
+              '0 8px 32px rgba(0,0,0,0.5), 0 0 24px rgba(123,124,248,0.15), inset 0 0 0 1px rgba(123,124,248,0.05)',
+          }}
+        >
         <CardHeader className="text-center pb-2">
           <h1
-            className="text-[28px] font-bold tracking-tight"
-            style={{ color: '#7B7CF8' }}
+            className="text-[28px] font-bold tracking-tight select-none"
+            style={{
+              color: '#7B7CF8',
+              textShadow:
+                '0 0 12px rgba(123,124,248,0.5), 0 0 30px rgba(123,124,248,0.3), 0 0 60px rgba(123,124,248,0.1)',
+            }}
           >
             HavenHQ
           </h1>
@@ -106,20 +125,19 @@ export default function Login() {
               </p>
             )}
 
-            <Button
+            <NeonButton
               type="submit"
               disabled={submitting}
-              className="w-full rounded-[8px] font-medium"
-              style={{
-                backgroundColor: submitting ? '#4A4AC4' : '#7B7CF8',
-              }}
+              size="lg"
+              withBloom={false}
+              className="w-full"
             >
               {submitting
                 ? 'Please wait...'
                 : isSignUp
                   ? 'Create Account'
                   : 'Sign In'}
-            </Button>
+            </NeonButton>
 
             <p className="text-center text-sm text-text-secondary">
               {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
@@ -130,14 +148,18 @@ export default function Login() {
                   setError(null)
                 }}
                 className="font-medium hover:underline"
-                style={{ color: '#7B7CF8' }}
+                style={{
+                  color: '#9596FF',
+                  textShadow: '0 0 6px rgba(123,124,248,0.35)',
+                }}
               >
                 {isSignUp ? 'Sign in' : 'Sign up'}
               </button>
             </p>
           </form>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   )
 }
