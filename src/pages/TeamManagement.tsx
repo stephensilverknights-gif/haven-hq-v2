@@ -7,12 +7,15 @@ import {
   Shield,
   ChevronDown,
   ArrowLeft,
+  Trash2,
+  Mail,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import TopNav from '@/components/TopNav'
 import UserAvatar from '@/components/UserAvatar'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { useProfileEmails, useDeleteUser } from '@/hooks/useAdminUsers'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Profile } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -37,17 +40,22 @@ function useAllProfiles() {
 
 function MemberRow({
   member,
+  email,
   currentUserId,
   index,
   onUpdate,
+  onDelete,
 }: {
   member: Profile
+  email?: string
   currentUserId: string
   index: number
   onUpdate: () => void
+  onDelete: (id: string, name: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const isSelf = member.id === currentUserId
 
   const handleToggleApproval = async () => {
@@ -121,6 +129,14 @@ function MemberRow({
               {member.is_training_admin ? 'Admin' : 'Team Member'}
             </span>
           </div>
+          {email && (
+            <div className="flex items-center gap-1 mt-0.5 min-w-0">
+              <Mail size={10} strokeWidth={1.5} className="text-text-muted shrink-0" />
+              <span className="text-[11px] text-text-muted truncate font-mono">
+                {email}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Status badges */}
@@ -255,6 +271,50 @@ function MemberRow({
                   })}
                 </p>
               </div>
+
+              {/* Danger zone — delete user */}
+              {!isSelf && (
+                <div className="pt-2">
+                  {!confirmDelete ? (
+                    <button
+                      onClick={() => setConfirmDelete(true)}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 text-[11px] font-medium text-text-muted hover:text-fire-text transition-colors px-2 py-1 rounded-[6px] hover:bg-fire-bg"
+                    >
+                      <Trash2 size={12} strokeWidth={1.5} />
+                      Delete user
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 rounded-[6px] bg-fire-bg border border-fire-border">
+                      <span className="text-[11px] text-fire-text flex-1">
+                        Delete {member.name}? Cannot be undone.
+                      </span>
+                      <button
+                        onClick={async () => {
+                          setSaving(true)
+                          try {
+                            await onDelete(member.id, member.name)
+                          } finally {
+                            setSaving(false)
+                            setConfirmDelete(false)
+                          }
+                        }}
+                        disabled={saving}
+                        className="text-[11px] font-semibold text-fire-text hover:text-white hover:bg-fire-text/30 px-2 py-0.5 rounded-[4px] transition-colors disabled:opacity-50"
+                      >
+                        {saving ? 'Deleting…' : 'Yes, delete'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(false)}
+                        disabled={saving}
+                        className="text-[11px] font-medium text-text-muted hover:text-text-secondary px-2 py-0.5 rounded-[4px] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -270,6 +330,9 @@ export default function TeamManagement() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: members, isLoading } = useAllProfiles()
+  const isAdmin = !!profile?.is_training_admin
+  const { data: emails } = useProfileEmails(isAdmin)
+  const deleteUser = useDeleteUser()
 
   const pendingCount = members?.filter((m) => !m.approved).length ?? 0
   const activeCount = members?.filter((m) => m.approved).length ?? 0
@@ -277,6 +340,10 @@ export default function TeamManagement() {
   const handleUpdate = () => {
     queryClient.invalidateQueries({ queryKey: ['allProfiles'] })
     queryClient.invalidateQueries({ queryKey: ['teamProfiles'] })
+  }
+
+  const handleDelete = async (id: string) => {
+    await deleteUser.mutateAsync(id)
   }
 
   // Admin gate
@@ -347,9 +414,11 @@ export default function TeamManagement() {
                     <MemberRow
                       key={m.id}
                       member={m}
+                      email={emails?.[m.id]}
                       currentUserId={profile?.id ?? ''}
                       index={i}
                       onUpdate={handleUpdate}
+                      onDelete={handleDelete}
                     />
                   ))}
               </div>
@@ -381,9 +450,11 @@ export default function TeamManagement() {
                     <MemberRow
                       key={m.id}
                       member={m}
+                      email={emails?.[m.id]}
                       currentUserId={profile?.id ?? ''}
                       index={i}
                       onUpdate={handleUpdate}
+                      onDelete={handleDelete}
                     />
                   ))}
               </div>
