@@ -131,26 +131,77 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
             <div
               className={
                 isMobile
-                  ? 'bg-card-bg rounded-t-[16px] border border-border border-b-0 shadow-xl w-full max-h-[92vh] overflow-y-auto themed-scroll'
-                  : 'bg-card-bg rounded-[12px] border border-border shadow-xl w-full max-w-[520px] max-h-[90vh] overflow-y-auto themed-scroll'
+                  ? 'bg-card-bg rounded-t-[16px] w-full max-h-[92vh] overflow-y-auto themed-scroll'
+                  : 'bg-card-bg rounded-[12px] w-full max-w-[520px] max-h-[90vh] overflow-y-auto themed-scroll'
               }
+              style={{
+                border: isMobile ? 'none' : '1px solid rgba(123,124,248,0.35)',
+                borderTop: isMobile ? '1px solid rgba(123,124,248,0.35)' : '1px solid rgba(123,124,248,0.35)',
+                borderLeft: isMobile ? 'none' : '1px solid rgba(123,124,248,0.35)',
+                borderRight: isMobile ? 'none' : '1px solid rgba(123,124,248,0.35)',
+                borderBottom: isMobile ? 'none' : '1px solid rgba(123,124,248,0.35)',
+                boxShadow:
+                  '0 8px 32px rgba(0,0,0,0.5), 0 0 24px rgba(123,124,248,0.15), 0 0 48px rgba(123,124,248,0.08), inset 0 0 0 1px rgba(123,124,248,0.05)',
+              }}
             >
               {/* Drag handle — mobile only */}
               {isMobile && (
                 <div className="flex justify-center pt-3 pb-1">
-                  <div className="w-10 h-1 bg-zinc-300 rounded-full" />
+                  <div
+                    className="w-10 h-1 rounded-full"
+                    style={{
+                      background: 'rgba(123,124,248,0.4)',
+                      boxShadow: '0 0 6px rgba(123,124,248,0.3)',
+                    }}
+                  />
                 </div>
               )}
 
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border">
-                <h2 className="text-lg font-semibold text-text-primary">New Task</h2>
+              {/* Header — indigo wash + shimmer divider */}
+              <div
+                className="relative flex items-center justify-between px-5 sm:px-6 py-4"
+                style={{
+                  background:
+                    'linear-gradient(180deg, rgba(123,124,248,0.10) 0%, rgba(123,124,248,0.04) 100%)',
+                }}
+              >
+                <h2
+                  className="text-lg font-semibold text-text-primary"
+                  style={{ textShadow: '0 0 12px rgba(123,124,248,0.35)' }}
+                >
+                  New Task
+                </h2>
                 <button
                   onClick={onClose}
                   className="flex items-center justify-center min-w-[44px] min-h-[44px] text-text-muted hover:text-text-secondary transition-colors -mr-2"
+                  style={{
+                    filter:
+                      'drop-shadow(0 0 4px rgba(123,124,248,0.4)) drop-shadow(0 0 10px rgba(123,124,248,0.2))',
+                  }}
                 >
                   <X size={20} strokeWidth={1.5} />
                 </button>
+              </div>
+              {/* Shimmer divider */}
+              <div className="relative">
+                <div
+                  className="absolute left-0 right-0 top-0 h-[1px]"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, transparent 3%, rgba(123,124,248,0.4) 25%, rgba(123,124,248,0.7) 50%, rgba(123,124,248,0.4) 75%, transparent 97%)',
+                  }}
+                />
+                <div
+                  aria-hidden
+                  className="absolute left-0 right-0 top-0 h-[6px] pointer-events-none"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, transparent 3%, rgba(123,124,248,0.4) 25%, rgba(123,124,248,0.7) 50%, rgba(123,124,248,0.4) 75%, transparent 97%)',
+                    filter: 'blur(3px)',
+                    opacity: 0.5,
+                  }}
+                />
+                <div className="h-[1px]" />
               </div>
 
               {/* Form */}
@@ -297,7 +348,14 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
                           transition={{ duration: 0.18 }}
                           className="mt-2 overflow-hidden"
                         >
-                          <div className="bg-zinc-50 border border-zinc-200 rounded-[8px] p-3 space-y-1.5">
+                          <div
+                            className="rounded-[8px] p-3 space-y-1.5"
+                            style={{
+                              background: 'rgba(123,124,248,0.06)',
+                              border: '1px solid rgba(123,124,248,0.25)',
+                              boxShadow: 'inset 0 0 8px rgba(123,124,248,0.04)',
+                            }}
+                          >
                             <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">
                               {selectedTemplate.steps.length} steps will be added
                             </p>
@@ -344,14 +402,27 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
                   >
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={isSaving}
-                    className="rounded-[8px] font-medium min-h-[44px]"
-                    style={{ backgroundColor: '#5B5BD6' }}
-                  >
-                    {isSaving ? 'Creating…' : 'Create Task'}
-                  </Button>
+                  <div className="relative group">
+                    <div
+                      aria-hidden
+                      className="absolute -inset-2 rounded-[12px] opacity-40 group-hover:opacity-80 transition-opacity duration-200 blur-xl pointer-events-none"
+                      style={{ background: 'rgba(123,124,248,0.5)' }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="relative rounded-[8px] font-medium min-h-[44px] px-4 text-[13px] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] disabled:hover:scale-100"
+                      style={{
+                        background: 'rgba(123,124,248,0.14)',
+                        color: '#FFFFFF',
+                        border: '1.5px solid rgba(123,124,248,0.8)',
+                        boxShadow:
+                          '0 0 10px rgba(123,124,248,0.4), 0 0 24px rgba(123,124,248,0.2), inset 0 0 10px rgba(123,124,248,0.1)',
+                      }}
+                    >
+                      {isSaving ? 'Creating…' : 'Create Task'}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

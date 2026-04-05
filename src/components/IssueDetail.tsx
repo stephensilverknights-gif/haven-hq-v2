@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, ArrowLeft, Check, ListChecks, ChevronDown, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
 import PriorityBadge from '@/components/PriorityBadge'
 import PropertyBadge from '@/components/PropertyBadge'
 import ActivityLog from '@/components/ActivityLog'
@@ -24,8 +23,30 @@ interface IssueDetailProps {
 
 const STATUS_OPTIONS: { value: IssueStatus; label: string; color: string }[] = [
   { value: 'in_progress', label: 'In Progress', color: '#7B7CF8' },
-  { value: 'stuck',       label: 'Stuck',       color: '#FF6B6B' },
+  { value: 'stuck',       label: 'Stuck',       color: '#FBBF24' },
 ]
+
+// Priority → neon palette for panel-wide tinting (matches IssueCardV2)
+const PRIORITY_PANEL: Record<Priority, { accent: string; accentSoft: string; bloom: string; shimmer: string }> = {
+  on_fire: {
+    accent: '#FF6B6B',
+    accentSoft: 'rgba(239,68,68,0.55)',
+    bloom: 'rgba(239,68,68,0.25)',
+    shimmer: 'linear-gradient(90deg,transparent 3%,rgba(239,68,68,0.4) 25%,rgba(255,107,107,0.65) 50%,rgba(239,68,68,0.4) 75%,transparent 97%)',
+  },
+  urgent: {
+    accent: '#FBBF24',
+    accentSoft: 'rgba(217,119,6,0.5)',
+    bloom: 'rgba(217,119,6,0.2)',
+    shimmer: 'linear-gradient(90deg,transparent 3%,rgba(251,191,36,0.35) 25%,rgba(251,191,36,0.6) 50%,rgba(251,191,36,0.35) 75%,transparent 97%)',
+  },
+  watch: {
+    accent: '#34D399',
+    accentSoft: 'rgba(52,211,153,0.4)',
+    bloom: 'rgba(52,211,153,0.15)',
+    shimmer: 'linear-gradient(90deg,transparent 3%,rgba(52,211,153,0.3) 25%,rgba(52,211,153,0.5) 50%,rgba(52,211,153,0.3) 75%,transparent 97%)',
+  },
+}
 
 function StatusSelector({
   currentStatus,
@@ -63,11 +84,18 @@ function StatusSelector({
             )}
             style={isSelected ? {
               backgroundColor: color + '20',
-              borderColor: color + '70',
+              borderColor: color + 'B3',
               color,
+              boxShadow: `0 0 10px ${color}50, 0 0 20px ${color}26, inset 0 0 8px ${color}1A`,
             } : {}}
           >
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{
+                backgroundColor: color,
+                boxShadow: isSelected ? `0 0 6px ${color}` : undefined,
+              }}
+            />
             {label}
           </button>
         )
@@ -77,9 +105,9 @@ function StatusSelector({
 }
 
 const PRIORITY_OPTIONS: { value: Priority; color: string }[] = [
-  { value: 'on_fire', color: '#EF4444' },
-  { value: 'urgent',  color: '#D97706' },
-  { value: 'watch',   color: '#059669' },
+  { value: 'on_fire', color: '#FF6B6B' },
+  { value: 'urgent',  color: '#FBBF24' },
+  { value: 'watch',   color: '#34D399' },
 ]
 
 function PrioritySelector({
@@ -105,11 +133,18 @@ function PrioritySelector({
             )}
             style={isSelected ? {
               backgroundColor: color + '20',
-              borderColor: color + '70',
+              borderColor: color + 'B3',
               color,
+              boxShadow: `0 0 10px ${color}50, 0 0 20px ${color}26, inset 0 0 8px ${color}1A`,
             } : {}}
           >
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{
+                backgroundColor: color,
+                boxShadow: isSelected ? `0 0 6px ${color}` : undefined,
+              }}
+            />
             {PRIORITY_LABELS[value]}
           </button>
         )
@@ -340,17 +375,28 @@ function IssueDetailContent({
   }
 
   const isPanel = variant === 'panel'
+  const neon = PRIORITY_PANEL[issue.priority]
 
   return (
-    <div className={cn('flex flex-col', isPanel ? 'h-full w-full bg-card-bg' : 'h-full w-full bg-card-bg')}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-border shrink-0">
+    <div className={cn('flex flex-col h-full w-full bg-card-bg')}>
+      {/* Header — priority-tinted indigo wash + shimmer divider */}
+      <div
+        className="relative flex items-center justify-between px-4 sm:px-5 py-4 shrink-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(123,124,248,0.10) 0%, rgba(123,124,248,0.04) 100%)',
+        }}
+      >
         <div className="flex items-center gap-2 min-w-0">
           {/* Back button — overlay mobile only */}
           {!isPanel && (
             <button
               onClick={onClose}
               className="sm:hidden flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 text-text-muted hover:text-text-secondary transition-colors"
+              style={{
+                filter:
+                  'drop-shadow(0 0 4px rgba(123,124,248,0.4)) drop-shadow(0 0 10px rgba(123,124,248,0.2))',
+              }}
             >
               <ArrowLeft size={20} strokeWidth={1.5} />
             </button>
@@ -367,9 +413,30 @@ function IssueDetailContent({
         <button
           onClick={onClose}
           className="flex items-center justify-center min-w-[44px] min-h-[44px] text-text-muted hover:text-text-secondary transition-colors shrink-0 -mr-2"
+          style={{
+            filter:
+              'drop-shadow(0 0 4px rgba(123,124,248,0.4)) drop-shadow(0 0 10px rgba(123,124,248,0.2))',
+          }}
         >
           <X size={20} strokeWidth={1.5} />
         </button>
+      </div>
+      {/* Shimmer divider — priority-tinted, matches IssueCardV2 */}
+      <div className="relative shrink-0">
+        <div
+          className="absolute left-0 right-0 top-0 h-[1px]"
+          style={{ background: neon.shimmer }}
+        />
+        <div
+          aria-hidden
+          className="absolute left-0 right-0 top-0 h-[6px] pointer-events-none"
+          style={{
+            background: neon.shimmer,
+            filter: 'blur(3px)',
+            opacity: 0.5,
+          }}
+        />
+        <div className="h-[1px]" />
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain themed-scroll">
@@ -431,15 +498,20 @@ function IssueDetailContent({
                     autoFocus
                   />
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
+                    <button
                       onClick={confirmStatusChange}
                       disabled={!statusNote.trim() || updateStatus.isPending}
-                      className="rounded-[8px] min-h-[44px] sm:min-h-0"
-                      style={{ backgroundColor: '#7B7CF8' }}
+                      className="rounded-[8px] min-h-[44px] sm:min-h-[36px] px-4 text-[13px] font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] disabled:hover:scale-100"
+                      style={{
+                        background: 'rgba(123,124,248,0.14)',
+                        color: '#9596FF',
+                        border: '1.5px solid rgba(123,124,248,0.7)',
+                        boxShadow:
+                          '0 0 8px rgba(123,124,248,0.35), inset 0 0 6px rgba(123,124,248,0.08)',
+                      }}
                     >
                       {updateStatus.isPending ? 'Saving...' : 'Confirm'}
-                    </Button>
+                    </button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -454,31 +526,66 @@ function IssueDetailContent({
             </AnimatePresence>
           </div>
 
-          <Separator />
+          <div className="relative h-[1px]">
+            <div
+              className="absolute left-0 right-0 top-0 h-[1px]"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent, rgba(123,124,248,0.25), transparent)',
+              }}
+            />
+          </div>
 
           {/* Checklist */}
           <IssueChecklist issueId={issue.id} />
 
-          <Separator />
+          <div className="relative h-[1px]">
+            <div
+              className="absolute left-0 right-0 top-0 h-[1px]"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent, rgba(123,124,248,0.25), transparent)',
+              }}
+            />
+          </div>
 
           {/* Activity Log */}
           <ActivityLog issueId={issue.id} />
 
-          <Separator />
+          <div className="relative h-[1px]">
+            <div
+              className="absolute left-0 right-0 top-0 h-[1px]"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent, rgba(123,124,248,0.25), transparent)',
+              }}
+            />
+          </div>
 
           {/* Cost Entries */}
           <CostEntry issueId={issue.id} />
 
-          {/* Resolve Button */}
+          {/* Resolve Button — neon teal glow */}
           {issue.status !== 'resolved' && (
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                className="w-full rounded-[8px] text-watch-text border-watch-border hover:bg-watch-bg min-h-[44px]"
+            <div className="pt-2 relative group">
+              <div
+                aria-hidden
+                className="absolute -inset-2 rounded-[12px] opacity-40 group-hover:opacity-80 transition-opacity duration-200 blur-xl pointer-events-none"
+                style={{ background: 'rgba(52,211,153,0.35)' }}
+              />
+              <button
                 onClick={() => handleStatusChange('resolved')}
+                className="relative w-full rounded-[8px] min-h-[44px] text-[13px] font-semibold transition-all duration-200 hover:scale-[1.005]"
+                style={{
+                  background: 'rgba(52,211,153,0.12)',
+                  color: '#34D399',
+                  border: '1.5px solid rgba(52,211,153,0.6)',
+                  boxShadow:
+                    '0 0 10px rgba(52,211,153,0.35), 0 0 24px rgba(52,211,153,0.15), inset 0 0 10px rgba(52,211,153,0.08)',
+                }}
               >
                 Resolve Task
-              </Button>
+              </button>
             </div>
           )}
         </div>

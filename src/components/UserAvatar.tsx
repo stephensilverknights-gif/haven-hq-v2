@@ -21,6 +21,12 @@ export default function UserAvatar({ initials, name, size = 'md', className }: U
             ? 'text-haven-indigo border border-haven-indigo/50 bg-haven-indigo/8'
             : 'bg-haven-indigo text-white'
         )}
+        style={{
+          boxShadow: isGhost
+            ? '0 0 6px rgba(123,124,248,0.25), inset 0 0 4px rgba(123,124,248,0.08)'
+            : '0 0 8px rgba(123,124,248,0.4), 0 0 16px rgba(123,124,248,0.2)',
+          textShadow: isGhost ? '0 0 6px rgba(123,124,248,0.35)' : undefined,
+        }}
       >
         {initials}
       </div>
