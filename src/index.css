@@ -123,6 +123,17 @@
 .v2-bloom-hover { opacity: 0; transition: opacity 0.2s ease-out; }
 .group:hover .v2-bloom-hover { animation: v2-hover-glow 1.4s ease-in-out infinite; }
 
+/* Neon-tinted card border — subtle indigo edge for generic containers.
+   Drop-in replacement for `border border-border`. */
+.neon-border {
+  border: 1px solid rgba(123, 124, 248, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(123, 124, 248, 0.04);
+}
+.neon-border-strong {
+  border: 1px solid rgba(123, 124, 248, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(123, 124, 248, 0.06), 0 0 8px rgba(123, 124, 248, 0.1);
+}
+
 /* Typing indicator dots */
 @keyframes typing-dot {
   0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }

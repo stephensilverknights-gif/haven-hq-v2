@@ -327,7 +327,7 @@ export default function TrainingSession() {
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4">
           {/* Scenario Brief */}
-          <div className="mb-4 bg-surface rounded-[10px] border border-border overflow-hidden">
+          <div className="mb-4 bg-surface rounded-[10px] neon-border overflow-hidden">
             <button
               onClick={() => setBriefExpanded(!briefExpanded)}
               className="w-full flex items-center justify-between px-4 py-3 text-left"

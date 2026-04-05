@@ -44,7 +44,7 @@ function PropertyForm({
   const valid = name.trim().length > 0 && market.length > 0
 
   return (
-    <div className="bg-surface border border-border rounded-[10px] p-3 space-y-3">
+    <div className="bg-surface neon-border rounded-[10px] p-3 space-y-3">
       <div className="flex gap-3 items-end">
         <div className="flex-1">
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
@@ -92,7 +92,7 @@ function PropertyRow({
 }) {
   return (
     <div className={cn(
-      'bg-card-bg border border-border rounded-[10px] px-3 py-2.5 flex items-center gap-3',
+      'bg-card-bg neon-border rounded-[10px] px-3 py-2.5 flex items-center gap-3',
       !property.active && 'opacity-40'
     )}>
       <div className="flex-1 min-w-0">
@@ -485,7 +485,7 @@ function TemplateForm({
   const valid = name.trim().length > 0 && steps.length > 0 && steps.every((s) => s.label.trim())
 
   return (
-    <div className="bg-surface border border-border rounded-[12px] p-4 space-y-4">
+    <div className="bg-surface neon-border rounded-[12px] p-4 space-y-4">
       <div className="space-y-3">
         <div>
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
@@ -549,7 +549,7 @@ function TemplateRow({
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   return (
-    <div className="bg-card-bg border border-border rounded-[12px] p-4">
+    <div className="bg-card-bg neon-border rounded-[12px] p-4">
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="min-w-0">
           <h3 className="text-[15px] font-semibold text-text-primary">{template.name}</h3>

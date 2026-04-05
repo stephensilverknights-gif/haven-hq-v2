@@ -67,10 +67,15 @@ function ImportRow({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15, delay: index * 0.02, ease: [0.16, 1, 0.3, 1] }}
-      className={cn(
-        'bg-card-bg rounded-[10px] border border-border overflow-hidden',
-        imp.worth_converting ? 'border-l-2 border-l-watch-accent' : ''
-      )}
+      className="bg-card-bg rounded-[10px] overflow-hidden"
+      style={{
+        border: imp.worth_converting
+          ? '1px solid rgba(52,211,153,0.4)'
+          : '1px solid rgba(123,124,248,0.15)',
+        boxShadow: imp.worth_converting
+          ? '0 0 6px rgba(52,211,153,0.12), inset 0 0 0 1px rgba(52,211,153,0.05)'
+          : 'inset 0 0 0 1px rgba(123,124,248,0.03)',
+      }}
     >
       <button
         onClick={() => setExpanded(!expanded)}
@@ -363,7 +368,7 @@ export default function HostawayImporter() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-            className="mb-5 bg-surface rounded-[10px] border border-border px-4 py-3"
+            className="mb-5 bg-surface rounded-[10px] neon-border px-4 py-3"
           >
             <p className="text-xs text-text-secondary leading-relaxed">
               Pulls recent guest conversations from Hostaway (March 2025+), classifies them with AI,

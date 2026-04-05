@@ -159,7 +159,7 @@ export default function Training() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-6 bg-card-bg rounded-[10px] border border-border p-6"
+            className="mt-6 bg-card-bg rounded-[10px] neon-border p-6"
           >
             <div className="flex items-baseline gap-2">
               <span className="text-4xl font-bold text-text-primary">{repsCompleted}</span>
@@ -205,7 +205,7 @@ export default function Training() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-4 bg-card-bg rounded-[10px] border border-border p-4"
+              className="mt-4 bg-card-bg rounded-[10px] neon-border p-4"
             >
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-[10px] text-text-muted uppercase tracking-wider font-medium">
@@ -324,7 +324,7 @@ export default function Training() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.15, delay: i * 0.04, ease: [0.16, 1, 0.3, 1] }}
                       onClick={() => navigate(`/training/complete/${session.id}`)}
-                      className="w-full bg-card-bg rounded-[10px] border border-border p-4 flex items-center justify-between hover:bg-surface-hover transition-colors cursor-pointer text-left"
+                      className="w-full bg-card-bg rounded-[10px] neon-border p-4 flex items-center justify-between hover:bg-surface-hover transition-colors cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         {session.score_overall != null && (

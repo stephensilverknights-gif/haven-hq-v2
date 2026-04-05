@@ -89,11 +89,19 @@ function MemberRow({
       <button
         onClick={() => setExpanded(!expanded)}
         className={cn(
-          'w-full flex items-center gap-3 px-4 py-3.5 rounded-[10px] border transition-colors text-left cursor-pointer',
+          'w-full flex items-center gap-3 px-4 py-3.5 rounded-[10px] transition-colors text-left cursor-pointer',
           expanded
-            ? 'bg-surface border-haven-indigo/20'
-            : 'bg-card-bg border-border hover:bg-surface-hover'
+            ? 'bg-surface'
+            : 'bg-card-bg hover:bg-surface-hover'
         )}
+        style={{
+          border: expanded
+            ? '1px solid rgba(123,124,248,0.45)'
+            : '1px solid rgba(123,124,248,0.15)',
+          boxShadow: expanded
+            ? '0 0 8px rgba(123,124,248,0.2), inset 0 0 0 1px rgba(123,124,248,0.08)'
+            : 'inset 0 0 0 1px rgba(123,124,248,0.03)',
+        }}
       >
         <UserAvatar initials={member.initials} size="sm" />
 

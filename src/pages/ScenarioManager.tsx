@@ -240,7 +240,7 @@ function ScenarioRow({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15, delay: index * 0.02, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        'bg-card-bg rounded-[10px] border border-border p-4 transition-colors',
+        'bg-card-bg rounded-[10px] neon-border p-4 transition-colors',
         !scenario.active && 'opacity-60'
       )}
     >
@@ -345,7 +345,7 @@ function StandardsEditor() {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.15, delay: i * 0.02, ease: [0.16, 1, 0.3, 1] }}
-            className="bg-card-bg rounded-[10px] border border-border p-4"
+            className="bg-card-bg rounded-[10px] neon-border p-4"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-haven-indigo uppercase tracking-wider">
@@ -513,7 +513,7 @@ export default function ScenarioManager() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: 0.03, ease: [0.16, 1, 0.3, 1] }}
-            className="flex items-center gap-1 p-1 bg-surface rounded-[10px] border border-border mb-5"
+            className="flex items-center gap-1 p-1 bg-surface rounded-[10px] neon-border mb-5"
           >
             {(['scenarios', 'standards'] as Tab[]).map((tab) => (
               <button

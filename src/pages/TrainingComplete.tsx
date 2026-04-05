@@ -120,7 +120,7 @@ export default function TrainingComplete() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-            className="bg-card-bg rounded-[10px] border border-border p-6 text-center"
+            className="bg-card-bg rounded-[10px] neon-border p-6 text-center"
           >
             <div className="text-5xl font-bold text-text-primary">{overall}</div>
             <div className="text-sm text-text-muted mt-1">out of 100</div>
@@ -148,7 +148,7 @@ export default function TrainingComplete() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.15, delay: 0.12 + i * 0.04, ease: [0.16, 1, 0.3, 1] }}
-                className="bg-card-bg rounded-[10px] border border-border p-4 flex items-center justify-between"
+                className="bg-card-bg rounded-[10px] neon-border p-4 flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
                   {c.pass ? (
@@ -177,7 +177,7 @@ export default function TrainingComplete() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-6 bg-card-bg rounded-[10px] border border-border p-5"
+              className="mt-6 bg-card-bg rounded-[10px] neon-border p-5"
             >
               <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-2">
                 Feedback
@@ -194,7 +194,7 @@ export default function TrainingComplete() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-3 bg-card-bg rounded-[10px] border border-border p-5"
+              className="mt-3 bg-card-bg rounded-[10px] neon-border p-5"
             >
               <h3 className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-2">
                 What Haven Expects
@@ -211,7 +211,7 @@ export default function TrainingComplete() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-3 bg-surface rounded-[10px] border border-border overflow-hidden"
+              className="mt-3 bg-surface rounded-[10px] neon-border overflow-hidden"
             >
               <button
                 onClick={() => setStandardExpanded(!standardExpanded)}
@@ -254,7 +254,7 @@ export default function TrainingComplete() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-3 bg-surface rounded-[10px] border border-border overflow-hidden"
+            className="mt-3 bg-surface rounded-[10px] neon-border overflow-hidden"
           >
             <button
               onClick={() => setTranscriptExpanded(!transcriptExpanded)}

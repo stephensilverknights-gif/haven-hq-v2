@@ -68,21 +68,48 @@ function TeamOverview({
       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
       className="grid grid-cols-3 gap-3 mb-6"
     >
-      <div className="bg-card-bg rounded-[10px] border border-border p-4">
+      <div
+        className="bg-card-bg rounded-[10px] p-4"
+        style={{
+          border: '1px solid rgba(123,124,248,0.25)',
+          boxShadow: 'inset 0 0 0 1px rgba(123,124,248,0.04), 0 0 8px rgba(123,124,248,0.08)',
+        }}
+      >
         <div className="flex items-center gap-1.5 mb-1">
-          <Users size={13} strokeWidth={1.5} className="text-text-muted" />
+          <Users
+            size={13}
+            strokeWidth={1.5}
+            color="#9596FF"
+            style={{ filter: 'drop-shadow(0 0 2px rgba(123,124,248,0.5))' }}
+          />
           <span className="text-[10px] text-text-muted uppercase tracking-wider font-medium">
             Today's Reps
           </span>
         </div>
-        <div className="text-2xl font-bold text-text-primary">{totalReps}</div>
+        <div
+          className="text-2xl font-bold text-text-primary"
+          style={{ textShadow: '0 0 12px rgba(123,124,248,0.25)' }}
+        >
+          {totalReps}
+        </div>
         <div className="text-xs text-text-muted mt-0.5">
           {completedTrainees}/{profiles.length} finished
         </div>
       </div>
-      <div className="bg-card-bg rounded-[10px] border border-border p-4">
+      <div
+        className="bg-card-bg rounded-[10px] p-4"
+        style={{
+          border: '1px solid rgba(123,124,248,0.25)',
+          boxShadow: 'inset 0 0 0 1px rgba(123,124,248,0.04), 0 0 8px rgba(123,124,248,0.08)',
+        }}
+      >
         <div className="flex items-center gap-1.5 mb-1">
-          <TrendingUp size={13} strokeWidth={1.5} className="text-text-muted" />
+          <TrendingUp
+            size={13}
+            strokeWidth={1.5}
+            color="#9596FF"
+            style={{ filter: 'drop-shadow(0 0 2px rgba(123,124,248,0.5))' }}
+          />
           <span className="text-[10px] text-text-muted uppercase tracking-wider font-medium">
             Team Avg
           </span>
@@ -103,14 +130,28 @@ function TeamOverview({
         </div>
         <div className="text-xs text-text-muted mt-0.5">avg score today</div>
       </div>
-      <div className="bg-card-bg rounded-[10px] border border-border p-4">
+      <div
+        className="bg-card-bg rounded-[10px] p-4"
+        style={{
+          border: '1px solid rgba(217,119,6,0.3)',
+          boxShadow: 'inset 0 0 0 1px rgba(217,119,6,0.05), 0 0 8px rgba(217,119,6,0.08)',
+        }}
+      >
         <div className="flex items-center gap-1.5 mb-1">
-          <AlertTriangle size={13} strokeWidth={1.5} className="text-text-muted" />
+          <AlertTriangle
+            size={13}
+            strokeWidth={1.5}
+            color="#FBBF24"
+            style={{ filter: 'drop-shadow(0 0 2px rgba(251,191,36,0.5))' }}
+          />
           <span className="text-[10px] text-text-muted uppercase tracking-wider font-medium">
             Behind
           </span>
         </div>
-        <div className="text-2xl font-bold text-text-primary">
+        <div
+          className="text-2xl font-bold text-text-primary"
+          style={{ textShadow: '0 0 12px rgba(251,191,36,0.2)' }}
+        >
           {profiles.length - completedTrainees}
         </div>
         <div className="text-xs text-text-muted mt-0.5">still training</div>

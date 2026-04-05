@@ -161,7 +161,7 @@ function HistoryRow({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15, delay: index * 0.03, ease: [0.16, 1, 0.3, 1] }}
       onClick={() => navigate(`/training/complete/${session.id}`)}
-      className="w-full flex items-center gap-3 px-4 py-3.5 rounded-[10px] border border-border bg-card-bg hover:bg-surface-hover transition-colors text-left cursor-pointer group"
+      className="w-full flex items-center gap-3 px-4 py-3.5 rounded-[10px] neon-border bg-card-bg hover:bg-surface-hover transition-colors text-left cursor-pointer group"
     >
       {/* Score */}
       <div className="flex items-center justify-center w-11 h-11 rounded-[8px] bg-surface shrink-0">
@@ -289,7 +289,7 @@ function StatCard({
   color?: string
 }) {
   return (
-    <div className="bg-card-bg rounded-[10px] border border-border p-4">
+    <div className="bg-card-bg rounded-[10px] neon-border p-4">
       <div className="flex items-center gap-1.5 mb-1">
         {Icon && <Icon size={13} strokeWidth={1.5} className="text-text-muted" />}
         <span className="text-[10px] text-text-muted uppercase tracking-wider font-medium">
@@ -322,7 +322,7 @@ export default function Leaderboard() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="flex items-center gap-1 p-1 bg-surface rounded-[10px] border border-border mb-6"
+            className="flex items-center gap-1 p-1 bg-surface rounded-[10px] neon-border mb-6"
           >
             {(['leaderboard', 'history'] as Tab[]).map((tab) => (
               <button
