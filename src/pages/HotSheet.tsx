@@ -16,6 +16,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
   useSortable,
+  arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import TopNav from '@/components/TopNav'
@@ -250,6 +251,8 @@ export default function HotSheet() {
   const { types: issueTypes } = useIssueTypes()
   const reorderIssues = useReorderIssues()
   const [draggedIssue, setDraggedIssue] = useState<Issue | null>(null)
+  // Local order override: when set, this takes priority over server data for rendering
+  const [localOrder, setLocalOrder] = useState<Record<Priority, string[]> | null>(null)
 
   const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
@@ -291,11 +294,28 @@ export default function HotSheet() {
     })
   }, [allIssues, filterPriority, filterType, filterProperty, showingResolved])
 
-  const grouped = {
+  // Server-derived grouping
+  const serverGrouped = useMemo(() => ({
     on_fire: filteredIssues.filter((i) => i.priority === 'on_fire'),
     urgent:  filteredIssues.filter((i) => i.priority === 'urgent'),
     watch:   filteredIssues.filter((i) => i.priority === 'watch'),
-  }
+  }), [filteredIssues])
+
+  // Effective grouping: use local order if set, otherwise server order
+  const grouped = useMemo(() => {
+    if (!localOrder) return serverGrouped
+    const issueMap = new Map(filteredIssues.map(i => [i.id, i]))
+    const result: Record<Priority, Issue[]> = { on_fire: [], urgent: [], watch: [] }
+    for (const p of ['on_fire', 'urgent', 'watch'] as Priority[]) {
+      const ids = localOrder[p] ?? []
+      result[p] = ids.map(id => issueMap.get(id)).filter((i): i is Issue => !!i)
+      // Add any new issues not in localOrder
+      for (const issue of serverGrouped[p]) {
+        if (!ids.includes(issue.id)) result[p].push(issue)
+      }
+    }
+    return result
+  }, [localOrder, serverGrouped, filteredIssues])
 
   const hasActiveFilters = filterPriority !== 'all' || filterType !== 'all' || filterProperty !== 'all'
 
@@ -311,24 +331,33 @@ export default function HotSheet() {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    // Find which priority group both cards belong to
     const activeIssue = filteredIssues.find(i => i.id === active.id)
     const overIssue = filteredIssues.find(i => i.id === over.id)
     if (!activeIssue || !overIssue || activeIssue.priority !== overIssue.priority) return
 
-    const group = grouped[activeIssue.priority as Priority]
+    const priority = activeIssue.priority as Priority
+    const group = grouped[priority]
     const oldIndex = group.findIndex(i => i.id === active.id)
     const newIndex = group.findIndex(i => i.id === over.id)
     if (oldIndex === -1 || newIndex === -1) return
 
-    // Reorder the array
-    const reordered = [...group]
-    const [moved] = reordered.splice(oldIndex, 1)
-    reordered.splice(newIndex, 0, moved)
+    // Apply reorder locally FIRST — this prevents snap-back
+    const reordered = arrayMove(group, oldIndex, newIndex)
+    setLocalOrder({
+      ...localOrder,
+      on_fire: (priority === 'on_fire' ? reordered : grouped.on_fire).map(i => i.id),
+      urgent:  (priority === 'urgent'  ? reordered : grouped.urgent).map(i => i.id),
+      watch:   (priority === 'watch'   ? reordered : grouped.watch).map(i => i.id),
+    })
 
-    // Assign new sort_order values
+    // Then persist to DB in background
     const updates = reordered.map((issue, i) => ({ id: issue.id, sort_order: i + 1 }))
-    reorderIssues.mutate(updates)
+    reorderIssues.mutate(updates, {
+      onSettled: () => {
+        // Clear local override once server data is fresh
+        setLocalOrder(null)
+      },
+    })
   }
 
   return (
