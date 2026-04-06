@@ -1,5 +1,5 @@
-import { format, isPast, isFuture } from 'date-fns'
-import { RefreshCw, Calendar } from 'lucide-react'
+import { format, isPast } from 'date-fns'
+import { RefreshCw } from 'lucide-react'
 import {
   Select,
   SelectContent,

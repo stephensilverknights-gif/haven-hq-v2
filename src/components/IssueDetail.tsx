@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ArrowLeft, Check, ListChecks, ChevronDown, Trash2, Pencil, Calendar, User } from 'lucide-react'
-import { format, formatDistanceToNow, isPast, differenceInHours } from 'date-fns'
+import { format, isPast, differenceInHours } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'

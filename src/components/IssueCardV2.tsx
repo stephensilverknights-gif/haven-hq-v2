@@ -107,10 +107,6 @@ const STATUS_PILL: Record<
   },
 }
 
-const TYPE_ICON_MAP: Record<string, LucideIcon> = {
-  MessageSquare, Wrench, Sparkles, Truck, CalendarCheck, ParkingCircle, Circle,
-}
-
 const TYPE_META_MAP: Record<string, { label: string; icon: LucideIcon }> = {
   guest_request: { label: 'Guest', icon: MessageSquare },
   maintenance: { label: 'Maint.', icon: Wrench },

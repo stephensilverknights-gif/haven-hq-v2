@@ -20,7 +20,7 @@ import {
 } from '@/hooks/useProperties'
 import { useMarkets, useCreateMarket, useDeleteMarket } from '@/hooks/useMarkets'
 import { useIssueTypes } from '@/hooks/useIssueTypes'
-import { useCreateIssueType, useUpdateIssueType, useDeleteIssueType } from '@/hooks/useIssueTypeAdmin'
+import { useCreateIssueType, useUpdateIssueType } from '@/hooks/useIssueTypeAdmin'
 import { useAuth } from '@/contexts/AuthContext'
 import type { WorkflowTemplate, WorkflowTemplateStep, Property, IssueTypeRecord } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -663,7 +663,6 @@ function TaskTypesSection() {
   const { types: issueTypes } = useIssueTypes()
   const createType = useCreateIssueType()
   const updateType = useUpdateIssueType()
-  const deleteType = useDeleteIssueType()
   const [adding, setAdding] = useState(false)
   const [newSlug, setNewSlug] = useState('')
   const [newLabel, setNewLabel] = useState('')
