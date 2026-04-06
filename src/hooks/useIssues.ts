@@ -302,7 +302,6 @@ export function useReorderIssues() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (updates: { id: string; sort_order: number }[]) => {
-      // Batch update sort_order for each issue
       for (const { id, sort_order } of updates) {
         const { error } = await supabase
           .from('issues')
@@ -311,6 +310,31 @@ export function useReorderIssues() {
         if (error) throw error
       }
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['issues'] }) },
+    // Optimistic update: apply new sort_order to cache immediately
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({ queryKey: ['issues'] })
+      const previous = queryClient.getQueryData<Issue[]>(['issues'])
+
+      if (previous) {
+        const orderMap = new Map(updates.map(u => [u.id, u.sort_order]))
+        queryClient.setQueryData<Issue[]>(['issues'], (old) =>
+          old?.map(issue => {
+            const newOrder = orderMap.get(issue.id)
+            return newOrder !== undefined ? { ...issue, sort_order: newOrder } : issue
+          }) ?? []
+        )
+      }
+
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback on error
+      if (context?.previous) {
+        queryClient.setQueryData(['issues'], context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['issues'] })
+    },
   })
 }
