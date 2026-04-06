@@ -12,48 +12,49 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core'
 import IssueCardV2 from '@/components/IssueCardV2'
-import StatusChangeNoteModal from '@/components/StatusChangeNoteModal'
 import { toIssueCardV2Props } from '@/lib/toIssueCardV2Props'
-import { useUpdateIssueStatus } from '@/hooks/useIssues'
+import { useUpdateIssuePriority } from '@/hooks/useIssues'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Issue, IssueStatus, CostEntry } from '@/lib/types'
+import type { Issue, Priority, CostEntry } from '@/lib/types'
 import type { LastCompletedChecklistItem } from '@/hooks/useLastCompletedChecklist'
 
-const STATUS_COLUMNS: { status: IssueStatus; label: string; color: string; shimmer: string }[] = [
+const PRIORITY_COLUMNS: { priority: Priority; label: string; color: string; shimmer: string }[] = [
   {
-    status: 'in_progress',
-    label: 'In Progress',
-    color: '#7B7CF8',
-    shimmer: 'linear-gradient(90deg,transparent,rgba(123,124,248,0.3) 30%,rgba(123,124,248,0.12) 70%,transparent)',
+    priority: 'on_fire',
+    label: 'On Fire',
+    color: '#FF6B6B',
+    shimmer: 'linear-gradient(90deg,transparent,rgba(239,68,68,0.35) 30%,rgba(239,68,68,0.15) 70%,transparent)',
   },
   {
-    status: 'stuck',
-    label: 'Stuck',
+    priority: 'urgent',
+    label: 'Important',
     color: '#FBBF24',
     shimmer: 'linear-gradient(90deg,transparent,rgba(251,191,36,0.3) 30%,rgba(251,191,36,0.12) 70%,transparent)',
   },
   {
-    status: 'resolved',
-    label: 'Resolved',
+    priority: 'watch',
+    label: 'Upcoming',
     color: '#34D399',
     shimmer: 'linear-gradient(90deg,transparent,rgba(52,211,153,0.25) 30%,rgba(52,211,153,0.1) 70%,transparent)',
   },
 ]
 
 function DroppableColumn({
-  status,
+  id,
   label,
   color,
   shimmer,
+  count,
   children,
 }: {
-  status: string
+  id: string
   label: string
   color: string
   shimmer: string
+  count: number
   children: React.ReactNode
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: status })
+  const { setNodeRef, isOver } = useDroppable({ id })
 
   return (
     <div
@@ -77,6 +78,7 @@ function DroppableColumn({
         >
           {label}
         </span>
+        <span className="text-[11px] text-text-muted">· {count}</span>
       </div>
       <div className="relative h-[1px] mb-1">
         <div className="absolute left-0 right-0 top-0 h-[1px]" style={{ background: shimmer }} />
@@ -146,18 +148,20 @@ export default function StatusBoard({
   onSelect,
 }: StatusBoardProps) {
   const { user } = useAuth()
-  const updateStatus = useUpdateIssueStatus()
+  const updatePriority = useUpdateIssuePriority()
   const [draggedIssue, setDraggedIssue] = useState<Issue | null>(null)
-  const [pendingDrop, setPendingDrop] = useState<{ issue: Issue; targetStatus: IssueStatus } | null>(null)
 
   const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   const sensors = useSensors(pointerSensor, touchSensor)
 
-  const grouped: Record<IssueStatus, Issue[]> = {
-    in_progress: issues.filter(i => i.status === 'in_progress'),
-    stuck: issues.filter(i => i.status === 'stuck'),
-    resolved: issues.filter(i => i.status === 'resolved'),
+  // Only show active (non-resolved) issues in the board
+  const activeIssues = issues.filter(i => i.status !== 'resolved')
+
+  const grouped: Record<Priority, Issue[]> = {
+    on_fire: activeIssues.filter(i => i.priority === 'on_fire'),
+    urgent: activeIssues.filter(i => i.priority === 'urgent'),
+    watch: activeIssues.filter(i => i.priority === 'watch'),
   }
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -168,77 +172,63 @@ export default function StatusBoard({
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggedIssue(null)
     const { active, over } = event
-    if (!over) return
+    if (!over || !user) return
 
     const issue = active.data.current?.issue as Issue | undefined
     if (!issue) return
 
-    const targetStatus = over.id as IssueStatus
-    if (targetStatus === issue.status) return
+    const targetPriority = over.id as Priority
+    if (targetPriority === issue.priority) return
 
-    setPendingDrop({ issue, targetStatus })
-  }
-
-  const confirmDrop = async (note: string) => {
-    if (!pendingDrop || !user) return
-    await updateStatus.mutateAsync({
-      issueId: pendingDrop.issue.id,
-      status: pendingDrop.targetStatus,
-      note,
-      userId: user.id,
-      previousStatus: pendingDrop.issue.status,
-    })
-    setPendingDrop(null)
+    // Priority changes don't require a note — just update immediately
+    updatePriority.mutate({ issueId: issue.id, priority: targetPriority, userId: user.id })
   }
 
   return (
-    <>
-      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 themed-scroll">
-          {STATUS_COLUMNS.map(({ status, label, color, shimmer }) => (
-            <DroppableColumn key={status} status={status} label={label} color={color} shimmer={shimmer}>
-              {grouped[status].map((issue) => (
-                <DraggableCard
-                  key={issue.id}
-                  issue={issue}
-                  costEntries={costEntriesByIssue[issue.id]}
-                  lastCompletedByIssue={lastCompletedByIssue}
-                  lastNotes={lastNotes}
-                  selectedId={selectedId}
-                  onSelect={onSelect}
-                />
-              ))}
-              {grouped[status].length === 0 && (
-                <p className="text-[12px] text-text-muted text-center py-6 italic">
-                  Drop here
-                </p>
-              )}
-            </DroppableColumn>
-          ))}
-        </div>
-
-        <DragOverlay>
-          {draggedIssue && (
-            <div style={{ width: 340, opacity: 0.9, transform: 'scale(1.02)' }}>
-              <IssueCardV2
-                {...toIssueCardV2Props(draggedIssue, {
-                  costEntries: costEntriesByIssue[draggedIssue.id],
-                  lastCompletedChecklistItem: lastCompletedByIssue?.[draggedIssue.id],
-                  lastNote: lastNotes[draggedIssue.id],
-                })}
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 themed-scroll">
+        {PRIORITY_COLUMNS.map(({ priority, label, color, shimmer }) => (
+          <DroppableColumn
+            key={priority}
+            id={priority}
+            label={label}
+            color={color}
+            shimmer={shimmer}
+            count={grouped[priority].length}
+          >
+            {grouped[priority].map((issue) => (
+              <DraggableCard
+                key={issue.id}
+                issue={issue}
+                costEntries={costEntriesByIssue[issue.id]}
+                lastCompletedByIssue={lastCompletedByIssue}
+                lastNotes={lastNotes}
+                selectedId={selectedId}
+                onSelect={onSelect}
               />
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
+            ))}
+            {grouped[priority].length === 0 && (
+              <p className="text-[12px] text-text-muted text-center py-6 italic">
+                Drop here
+              </p>
+            )}
+          </DroppableColumn>
+        ))}
+      </div>
 
-      <StatusChangeNoteModal
-        open={!!pendingDrop}
-        targetStatus={pendingDrop?.targetStatus ?? 'in_progress'}
-        onConfirm={confirmDrop}
-        onCancel={() => setPendingDrop(null)}
-        isPending={updateStatus.isPending}
-      />
-    </>
+      <DragOverlay>
+        {draggedIssue && (
+          <div style={{ width: 340, opacity: 0.9, transform: 'scale(1.02)' }}>
+            <IssueCardV2
+              {...toIssueCardV2Props(draggedIssue, {
+                costEntries: costEntriesByIssue[draggedIssue.id],
+                lastCompletedChecklistItem: lastCompletedByIssue?.[draggedIssue.id],
+                lastNote: lastNotes[draggedIssue.id],
+              })}
+            />
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   )
 }
