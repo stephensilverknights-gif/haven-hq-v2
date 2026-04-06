@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Flame, Clock, Eye, ChevronDown } from 'lucide-react'
+import { Flame, Clock, Eye, ChevronDown, LayoutList, Columns3 } from 'lucide-react'
 import TopNav from '@/components/TopNav'
 import IssueCardV2 from '@/components/IssueCardV2'
 import NewIssueModal from '@/components/NewIssueModal'
 import IssueDetail from '@/components/IssueDetail'
+import StatusBoard from '@/components/StatusBoard'
 import {
   Select,
   SelectContent,
@@ -18,8 +19,9 @@ import { useAllCostEntries } from '@/hooks/useCostEntries'
 import { useLastCompletedChecklist } from '@/hooks/useLastCompletedChecklist'
 import { toIssueCardV2Props } from '@/lib/toIssueCardV2Props'
 import type { CostEntry } from '@/lib/types'
-import type { Issue, Priority, IssueType } from '@/lib/types'
-import { ISSUE_TYPE_LABELS, PRIORITY_LABELS } from '@/lib/types'
+import type { Issue, Priority } from '@/lib/types'
+import { PRIORITY_LABELS } from '@/lib/types'
+import { useIssueTypes } from '@/hooks/useIssueTypes'
 
 function SummaryStrip({ counts }: { counts: { on_fire: number; urgent: number; watch: number } }) {
   const items = [
@@ -181,11 +183,20 @@ export default function HotSheet() {
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null)
   const [showResolved, setShowResolved] = useState(false)
 
+  const [viewMode, setViewMode] = useState<'priority' | 'board'>(() => {
+    return (localStorage.getItem('havenhq-view-mode') as 'priority' | 'board') ?? 'priority'
+  })
+  const toggleView = (mode: 'priority' | 'board') => {
+    setViewMode(mode)
+    localStorage.setItem('havenhq-view-mode', mode)
+  }
+
   // Filters
   const [filterPriority, setFilterPriority] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
   const [filterProperty, setFilterProperty] = useState<string>('all')
 
+  const { types: issueTypes } = useIssueTypes()
   const { data: allCostEntries } = useAllCostEntries()
   const { data: lastCompletedByIssue } = useLastCompletedChecklist()
 
@@ -262,8 +273,8 @@ export default function HotSheet() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  {(Object.entries(ISSUE_TYPE_LABELS) as [IssueType, string][]).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  {issueTypes.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -279,6 +290,24 @@ export default function HotSheet() {
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* View toggle */}
+              <div className="flex items-center gap-0.5 border border-border rounded-[8px] p-0.5 shrink-0">
+                <button
+                  onClick={() => toggleView('priority')}
+                  className={`p-1.5 rounded-[6px] transition-all ${viewMode === 'priority' ? 'bg-haven-indigo/20 text-haven-indigo' : 'text-text-muted hover:text-text-secondary'}`}
+                  title="Priority View"
+                >
+                  <LayoutList size={14} strokeWidth={1.5} />
+                </button>
+                <button
+                  onClick={() => toggleView('board')}
+                  className={`p-1.5 rounded-[6px] transition-all ${viewMode === 'board' ? 'bg-haven-indigo/20 text-haven-indigo' : 'text-text-muted hover:text-text-secondary'}`}
+                  title="Board View"
+                >
+                  <Columns3 size={14} strokeWidth={1.5} />
+                </button>
+              </div>
 
               {hasActiveFilters && (
                 <button
@@ -317,7 +346,16 @@ export default function HotSheet() {
               </div>
             ) : (
               <>
-                {filteredIssues.length > 0 && (
+                {viewMode === 'board' ? (
+                  <StatusBoard
+                    issues={[...filteredIssues, ...resolvedIssues]}
+                    lastNotes={lastNotes}
+                    costEntriesByIssue={costEntriesByIssue}
+                    lastCompletedByIssue={lastCompletedByIssue}
+                    selectedId={selectedIssueId}
+                    onSelect={setSelectedIssueId}
+                  />
+                ) : filteredIssues.length > 0 ? (
                   <>
                     <SummaryStrip counts={counts} />
                     <div className="flex flex-col gap-5">
@@ -340,10 +378,10 @@ export default function HotSheet() {
                       ))}
                     </div>
                   </>
-                )}
+                ) : null}
 
-                {/* Resolved section */}
-                {resolvedIssues.length > 0 && !showingResolved && (
+                {/* Resolved section — hidden in board view */}
+                {viewMode === 'priority' && resolvedIssues.length > 0 && !showingResolved && (
                   <div className={filteredIssues.length > 0 ? 'mt-8' : ''}>
                     <button
                       onClick={() => setShowResolved(!showResolved)}
@@ -384,7 +422,7 @@ export default function HotSheet() {
                 )}
 
                 {/* Resolved — shown prominently when "Resolved" filter is active */}
-                {showingResolved && resolvedIssues.length > 0 && (
+                {viewMode === 'priority' && showingResolved && resolvedIssues.length > 0 && (
                   <div className="grid grid-cols-1 gap-2">
                     <p className="text-sm font-medium text-text-secondary mb-1">
                       Resolved ({resolvedIssues.length})
@@ -403,7 +441,7 @@ export default function HotSheet() {
                     ))}
                   </div>
                 )}
-                {showingResolved && resolvedIssues.length === 0 && (
+                {viewMode === 'priority' && showingResolved && resolvedIssues.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-20">
                     <p className="text-text-muted text-sm">No resolved tasks.</p>
                   </div>

@@ -1,18 +1,32 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ArrowLeft, Check, ListChecks, ChevronDown, Trash2 } from 'lucide-react'
+import { X, ArrowLeft, Check, ListChecks, ChevronDown, Trash2, Pencil, Calendar, User } from 'lucide-react'
+import { format, formatDistanceToNow, isPast, differenceInHours } from 'date-fns'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import PriorityBadge from '@/components/PriorityBadge'
 import PropertyBadge from '@/components/PropertyBadge'
 import ActivityLog from '@/components/ActivityLog'
 import CostEntry from '@/components/CostEntry'
-import { useUpdateIssueStatus, useUpdateIssuePriority } from '@/hooks/useIssues'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useUpdateIssueStatus, useUpdateIssuePriority, useUpdateIssueTitle, useUpdateIssueProperty, useUpdateIssueDueDate } from '@/hooks/useIssues'
+import { useProperties } from '@/hooks/useProperties'
 import { useChecklist, useToggleChecklistItem, useApplyTemplate, useDeleteChecklist } from '@/hooks/useChecklist'
 import { useWorkflowTemplates } from '@/hooks/useWorkflowTemplates'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Issue, IssueStatus, Priority } from '@/lib/types'
-import { STATUS_LABELS, ISSUE_TYPE_LABELS, PRIORITY_LABELS } from '@/lib/types'
+import { STATUS_LABELS, PRIORITY_LABELS } from '@/lib/types'
+import { useIssueTypes } from '@/hooks/useIssueTypes'
 import { cn } from '@/lib/utils'
 
 interface IssueDetailProps {
@@ -345,10 +359,18 @@ function IssueDetailContent({
   variant: 'overlay' | 'panel'
 }) {
   const { user } = useAuth()
+  const { labels: typeLabels } = useIssueTypes()
+  const { data: allProperties } = useProperties()
   const updateStatus = useUpdateIssueStatus()
   const updatePriority = useUpdateIssuePriority()
+  const updateTitle = useUpdateIssueTitle()
+  const updateProperty = useUpdateIssueProperty()
+  const updateDueDate = useUpdateIssueDueDate()
   const [statusNote, setStatusNote] = useState('')
   const [pendingStatus, setPendingStatus] = useState<IssueStatus | null>(null)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState('')
+  const [editingProperty, setEditingProperty] = useState(false)
 
   const handlePriorityChange = (priority: Priority) => {
     if (!user) return
@@ -401,11 +423,49 @@ function IssueDetailContent({
               <ArrowLeft size={20} strokeWidth={1.5} />
             </button>
           )}
-          {issue.property && (
-            <PropertyBadge
-              name={issue.property.name}
-              colorTag={issue.property.color_tag}
-            />
+          {issue.property && !editingProperty && (
+            <button
+              onClick={() => setEditingProperty(true)}
+              className="group"
+              title="Click to change property"
+            >
+              <PropertyBadge
+                name={issue.property.name}
+                colorTag={issue.property.color_tag}
+              />
+            </button>
+          )}
+          {editingProperty && (
+            <Select
+              value={issue.property_id}
+              onValueChange={(v) => {
+                if (user && v !== issue.property_id) {
+                  updateProperty.mutate({ issueId: issue.id, propertyId: v, userId: user.id })
+                }
+                setEditingProperty(false)
+              }}
+            >
+              <SelectTrigger className="w-[160px] rounded-[8px] text-sm h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(() => {
+                  if (!allProperties?.length) return null
+                  const markets = [...new Set(allProperties.map(p => p.market))]
+                  return markets.map((market, mi) => (
+                    <SelectGroup key={market}>
+                      <SelectLabel className="text-[11px] font-semibold uppercase tracking-wider text-text-muted px-2 pt-2 pb-1">
+                        {market}
+                      </SelectLabel>
+                      {allProperties.filter(p => p.market === market).map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                      {mi < markets.length - 1 && <SelectSeparator />}
+                    </SelectGroup>
+                  ))
+                })()}
+              </SelectContent>
+            </Select>
           )}
           <PriorityBadge priority={issue.priority} />
         </div>
@@ -441,18 +501,113 @@ function IssueDetailContent({
 
       <div className="flex-1 overflow-y-auto overscroll-contain themed-scroll">
         <div className="px-4 sm:px-5 py-4 space-y-5">
-          {/* Title + Type */}
+          {/* Title + Type (editable) */}
           <div>
-            <h2 className="text-lg font-semibold text-text-primary mb-1">
-              {issue.title}
-            </h2>
+            {editingTitle ? (
+              <Input
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={() => {
+                  if (titleDraft.trim() && titleDraft.trim() !== issue.title && user) {
+                    updateTitle.mutate({ issueId: issue.id, title: titleDraft.trim(), userId: user.id })
+                  }
+                  setEditingTitle(false)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                  if (e.key === 'Escape') { setEditingTitle(false) }
+                }}
+                className="text-lg font-semibold rounded-[8px] mb-1"
+                autoFocus
+              />
+            ) : (
+              <h2
+                className="text-lg font-semibold text-text-primary mb-1 cursor-pointer hover:text-haven-indigo transition-colors group flex items-center gap-1.5"
+                onClick={() => { setTitleDraft(issue.title); setEditingTitle(true) }}
+              >
+                {issue.title}
+                <Pencil size={12} strokeWidth={1.5} className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
+              </h2>
+            )}
             <span className="text-xs text-text-muted">
-              {ISSUE_TYPE_LABELS[issue.type]}
+              {typeLabels[issue.type] ?? issue.type}
             </span>
+
+            {/* Reservation banner */}
+            {issue.reservation && (
+              <div
+                className="mt-3 rounded-[8px] px-3 py-2.5"
+                style={{
+                  background: 'rgba(123,124,248,0.06)',
+                  border: '1px solid rgba(123,124,248,0.25)',
+                  boxShadow: '0 0 8px rgba(123,124,248,0.08)',
+                }}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <User size={12} strokeWidth={1.5} color="#9596FF" />
+                  <span className="text-[13px] font-semibold" style={{ color: '#E8E8F2' }}>
+                    {issue.reservation.guest_name ?? 'Guest'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[12px]" style={{ color: '#9596FF' }}>
+                  <Calendar size={11} strokeWidth={1.5} />
+                  <span>
+                    {issue.reservation.check_in ? format(new Date(issue.reservation.check_in), 'MMM d, h:mm a') : '?'}
+                    {' → '}
+                    {issue.reservation.check_out ? format(new Date(issue.reservation.check_out), 'MMM d, h:mm a') : '?'}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {issue.description && (
-              <p className="text-sm text-text-secondary mt-2">
-                {issue.description}
-              </p>
+              <div className="mt-2">
+                <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                  Situational Context
+                </span>
+                <p className="text-sm text-text-secondary mt-0.5">
+                  {issue.description}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Due Date */}
+          <div>
+            <label className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2 block">
+              Due Date
+            </label>
+            {issue.due_date ? (
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] text-text-secondary">
+                  {format(new Date(issue.due_date), 'MMM d, yyyy h:mm a')}
+                </span>
+                {(() => {
+                  const due = new Date(issue.due_date!)
+                  const overdue = isPast(due) && issue.status !== 'resolved'
+                  const hoursLeft = differenceInHours(due, new Date())
+                  const urgent = !overdue && hoursLeft < 24 && issue.status !== 'resolved'
+                  if (overdue) return <span className="text-[11px] font-semibold text-fire-text">Overdue</span>
+                  if (urgent) return <span className="text-[11px] font-semibold text-urgent-text">Due soon</span>
+                  return null
+                })()}
+                <button
+                  onClick={() => user && updateDueDate.mutate({ issueId: issue.id, dueDate: null, userId: user.id })}
+                  className="text-[11px] text-text-muted hover:text-red-400 transition-colors ml-auto"
+                >
+                  Clear
+                </button>
+              </div>
+            ) : (
+              <input
+                type="datetime-local"
+                className="text-sm text-text-secondary bg-surface border border-border rounded-[8px] px-3 py-1.5 min-h-[36px]"
+                onChange={(e) => {
+                  if (e.target.value && user) {
+                    updateDueDate.mutate({ issueId: issue.id, dueDate: new Date(e.target.value).toISOString(), userId: user.id })
+                  }
+                }}
+              />
             )}
           </div>
 

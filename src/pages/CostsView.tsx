@@ -40,12 +40,12 @@ export default function CostsView() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   const summary = useMemo(() => {
-    if (!entries) return { total: 0, reimbursable: 0 }
-    const total = entries.reduce((sum, e) => sum + Number(e.amount), 0)
-    const reimbursable = entries
-      .filter((e) => e.reimbursable !== 'none')
-      .reduce((sum, e) => sum + Number(e.amount), 0)
-    return { total, reimbursable }
+    if (!entries) return { expenses: 0, income: 0, unpaid: 0, net: 0 }
+    const expenses = entries.filter(e => e.direction === 'expense').reduce((sum, e) => sum + Number(e.amount), 0)
+    const income = entries.filter(e => e.direction === 'income').reduce((sum, e) => sum + Number(e.amount), 0)
+    const unpaid = entries.filter(e => !e.paid).reduce((sum, e) => sum + Number(e.amount), 0)
+    const net = income - expenses
+    return { expenses, income, unpaid, net }
   }, [entries])
 
   const sortedEntries = useMemo(() => {
@@ -86,78 +86,47 @@ export default function CostsView() {
         </h2>
 
         {/* Summary tiles */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
-          {/* Total Spend — indigo neon */}
-          <div className="relative group">
-            <div
-              aria-hidden
-              className="absolute -inset-[2px] rounded-[14px] opacity-25 group-hover:opacity-45 transition-opacity duration-200 blur-xl pointer-events-none"
-              style={{ background: 'rgba(123,124,248,0.25)' }}
-            />
-            <div
-              className="relative bg-card-bg rounded-[12px] p-4"
-              style={{
-                border: '1px solid rgba(123,124,248,0.3)',
-                boxShadow:
-                  '0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(123,124,248,0.05)',
-              }}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <DollarSign
-                  size={16}
-                  strokeWidth={1.5}
-                  color="#9596FF"
-                  style={{ filter: 'drop-shadow(0 0 3px rgba(123,124,248,0.5))' }}
-                />
-                <span className="text-sm text-text-secondary">Total Spend</span>
-              </div>
-              <span
-                className="text-2xl font-bold"
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          {[
+            { label: 'Expenses', value: summary.expenses, color: '#FF6B6B', glow: 'rgba(239,68,68,0.25)', border: 'rgba(239,68,68,0.3)' },
+            { label: 'Owed to Us', value: summary.income, color: '#34D399', glow: 'rgba(52,211,153,0.25)', border: 'rgba(52,211,153,0.3)' },
+            { label: 'Unpaid', value: summary.unpaid, color: '#FBBF24', glow: 'rgba(251,191,36,0.25)', border: 'rgba(217,119,6,0.35)' },
+            { label: 'Net', value: summary.net, color: '#9596FF', glow: 'rgba(123,124,248,0.25)', border: 'rgba(123,124,248,0.3)' },
+          ].map(({ label, value, color, glow, border }) => (
+            <div key={label} className="relative group">
+              <div
+                aria-hidden
+                className="absolute -inset-[2px] rounded-[14px] opacity-25 group-hover:opacity-45 transition-opacity duration-200 blur-xl pointer-events-none"
+                style={{ background: glow }}
+              />
+              <div
+                className="relative bg-card-bg rounded-[12px] p-4"
                 style={{
-                  color: '#E8E8F2',
-                  textShadow: '0 0 12px rgba(123,124,248,0.3)',
+                  border: `1px solid ${border}`,
+                  boxShadow: `0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px ${border}20`,
                 }}
               >
-                ${summary.total.toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          {/* Reimbursable Pending — amber neon */}
-          <div className="relative group">
-            <div
-              aria-hidden
-              className="absolute -inset-[2px] rounded-[14px] opacity-25 group-hover:opacity-45 transition-opacity duration-200 blur-xl pointer-events-none"
-              style={{ background: 'rgba(251,191,36,0.25)' }}
-            />
-            <div
-              className="relative bg-card-bg rounded-[12px] p-4"
-              style={{
-                border: '1px solid rgba(217,119,6,0.35)',
-                boxShadow:
-                  '0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(217,119,6,0.06)',
-              }}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <DollarSign
-                  size={16}
-                  strokeWidth={1.5}
-                  color="#FBBF24"
-                  style={{ filter: 'drop-shadow(0 0 3px rgba(251,191,36,0.5))' }}
-                />
-                <span className="text-sm text-text-secondary">Reimbursable Pending</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <DollarSign
+                    size={16}
+                    strokeWidth={1.5}
+                    color={color}
+                    style={{ filter: `drop-shadow(0 0 3px ${color}80)` }}
+                  />
+                  <span className="text-sm text-text-secondary">{label}</span>
+                </div>
+                <span
+                  className="text-2xl font-bold"
+                  style={{
+                    color: '#E8E8F2',
+                    textShadow: `0 0 12px ${color}50`,
+                  }}
+                >
+                  {value < 0 ? '-' : ''}${Math.abs(value).toFixed(2)}
+                </span>
               </div>
-              <span
-                className="text-2xl font-bold"
-                style={{
-                  color: '#E8E8F2',
-                  textShadow: '0 0 12px rgba(251,191,36,0.3)',
-                }}
-              >
-                ${summary.reimbursable.toFixed(2)}
-              </span>
             </div>
-          </div>
+          ))}
         </div>
 
         {/* Table */}
@@ -201,8 +170,9 @@ export default function CostsView() {
                     className={cn('text-xs cursor-pointer select-none hover:text-text-primary transition-colors', sortField === 'reimbursable' && 'text-haven-indigo')}
                     onClick={() => toggleSort('reimbursable')}
                   >
-                    Reimbursable<SortIcon field="reimbursable" />
+                    Category<SortIcon field="reimbursable" />
                   </TableHead>
+                  <TableHead className="text-xs">Paid</TableHead>
                   <TableHead
                     className={cn('text-xs hidden sm:table-cell cursor-pointer select-none hover:text-text-primary transition-colors', sortField === 'logged_by' && 'text-haven-indigo')}
                     onClick={() => toggleSort('logged_by')}
@@ -247,6 +217,18 @@ export default function CostsView() {
                       ) : (
                         <span className="text-text-muted text-xs">—</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={cn(
+                          'text-xs font-medium px-2 py-0.5 rounded-[20px]',
+                          entry.paid
+                            ? 'bg-watch-bg text-watch-text border border-watch-border'
+                            : 'bg-urgent-bg text-urgent-text border border-urgent-border'
+                        )}
+                      >
+                        {entry.paid ? 'Paid' : 'Unpaid'}
+                      </span>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       {entry.logger && (

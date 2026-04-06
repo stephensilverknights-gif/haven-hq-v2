@@ -1,16 +1,20 @@
 import { motion } from 'framer-motion'
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, format, isPast, differenceInHours } from 'date-fns'
 import {
   MessageSquare,
   CheckCircle2,
   Wrench,
   Sparkles,
+  Truck,
+  CalendarCheck,
+  ParkingCircle,
+  Circle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 type Priority = 'on_fire' | 'urgent' | 'watch'
 type Status = 'in_progress' | 'stuck' | 'resolved'
-type IssueType = 'guest_request' | 'maintenance' | 'cleaner'
+type IssueType = string
 
 export type RecentActivity =
   | { kind: 'checklist_done'; author: string; text: string }
@@ -26,6 +30,9 @@ interface IssueCardV2Props {
   cost: number | null
   openedAt: string
   recentActivity: RecentActivity | null
+  checkIn?: string | null
+  checkOut?: string | null
+  dueDate?: string | null
   onClick?: () => void
   isSelected?: boolean
 }
@@ -100,10 +107,21 @@ const STATUS_PILL: Record<
   },
 }
 
-const TYPE_META: Record<IssueType, { label: string; icon: LucideIcon }> = {
+const TYPE_ICON_MAP: Record<string, LucideIcon> = {
+  MessageSquare, Wrench, Sparkles, Truck, CalendarCheck, ParkingCircle, Circle,
+}
+
+const TYPE_META_MAP: Record<string, { label: string; icon: LucideIcon }> = {
   guest_request: { label: 'Guest', icon: MessageSquare },
   maintenance: { label: 'Maint.', icon: Wrench },
   cleaner: { label: 'Cleaner', icon: Sparkles },
+  vendor: { label: 'Vendor', icon: Truck },
+  reservation: { label: 'Res.', icon: CalendarCheck },
+  parking: { label: 'Parking', icon: ParkingCircle },
+}
+
+function getTypeMeta(type: string): { label: string; icon: LucideIcon } {
+  return TYPE_META_MAP[type] ?? { label: type, icon: Circle }
 }
 
 function formatCost(cost: number) {
@@ -120,12 +138,15 @@ export default function IssueCardV2({
   cost,
   openedAt,
   recentActivity,
+  checkIn,
+  checkOut,
+  dueDate,
   onClick,
   isSelected = false,
 }: IssueCardV2Props) {
   const neon = PRIORITY_NEON[priority]
   const pill = STATUS_PILL[status]
-  const typeMeta = TYPE_META[type]
+  const typeMeta = getTypeMeta(type)
   const isResolved = status === 'resolved'
   const isOnFire = priority === 'on_fire'
 
@@ -247,7 +268,19 @@ export default function IssueCardV2({
             </p>
           </div>
 
-          {/* Row 3: activity (fixed 1-line, reserved even when empty) */}
+          {/* Row 3: check-in/check-out (only when reservation linked) */}
+          {(checkIn || checkOut) && (
+            <div className="flex items-center gap-1.5 mt-[2px] min-w-0 h-[16px]">
+              <CalendarCheck size={10} strokeWidth={1.5} color="#9596FF" className="shrink-0" style={{ filter: 'drop-shadow(0 0 3px rgba(123,124,248,0.5))' }} />
+              <span className="text-[11px] truncate" style={{ color: '#9596FF' }}>
+                {checkIn ? format(new Date(checkIn), 'MMM d, h:mm a') : '?'}
+                {' → '}
+                {checkOut ? format(new Date(checkOut), 'MMM d, h:mm a') : '?'}
+              </span>
+            </div>
+          )}
+
+          {/* Row 4: activity (fixed 1-line, reserved even when empty) */}
           <div className="flex items-center gap-1.5 mt-[3px] min-w-0 h-[16px]">
             {recentActivity ? (
               <>
@@ -348,14 +381,31 @@ export default function IssueCardV2({
               {formatDistanceToNow(new Date(openedAt), { addSuffix: true })}
             </span>
           </div>
-          {cost != null && (
-            <span
-              className="text-[11px] font-medium whitespace-nowrap shrink-0"
-              style={{ color: '#9596FF' }}
-            >
-              {formatCost(cost)}
-            </span>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {dueDate && !isResolved && (() => {
+              const due = new Date(dueDate)
+              const overdue = isPast(due)
+              const hoursLeft = differenceInHours(due, new Date())
+              const urgent = !overdue && hoursLeft < 24
+              const color = overdue ? '#FF6B6B' : urgent ? '#FBBF24' : '#7878A8'
+              return (
+                <span className="flex items-center gap-1 text-[11px] whitespace-nowrap" style={{ color }}>
+                  {overdue && (
+                    <span className="w-[5px] h-[5px] rounded-full animate-pulse shrink-0" style={{ backgroundColor: color, boxShadow: `0 0 4px ${color}` }} />
+                  )}
+                  {overdue ? 'overdue' : `due ${formatDistanceToNow(due, { addSuffix: true })}`}
+                </span>
+              )
+            })()}
+            {cost != null && (
+              <span
+                className="text-[11px] font-medium whitespace-nowrap"
+                style={{ color: '#9596FF' }}
+              >
+                {formatCost(cost)}
+              </span>
+            )}
+          </div>
         </div>
       </motion.div>
     </div>

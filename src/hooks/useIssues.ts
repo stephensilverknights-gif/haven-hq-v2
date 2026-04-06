@@ -1,16 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Issue, IssueType, Priority, IssueStatus } from '@/lib/types'
+import type { Issue, Priority, IssueStatus } from '@/lib/types'
 
 interface CreateIssueInput {
   property_id: string
   title: string
   description?: string
-  type: IssueType
+  type: string
   priority: Priority
   initial_note: string
   created_by: string
+  reservation_id?: string
+  due_date?: string
 }
 
 async function fetchIssues(): Promise<Issue[]> {
@@ -20,7 +22,8 @@ async function fetchIssues(): Promise<Issue[]> {
       *,
       property:properties(*),
       creator:profiles!issues_created_by_fkey(*),
-      updater:profiles!issues_updated_by_fkey(*)
+      updater:profiles!issues_updated_by_fkey(*),
+      reservation:reservations(*)
     `)
     .order('created_at', { ascending: true })
 
@@ -127,6 +130,8 @@ export function useCreateIssue() {
           priority: input.priority,
           status: 'in_progress',
           created_by: input.created_by,
+          reservation_id: input.reservation_id || null,
+          due_date: input.due_date || null,
         })
         .select()
         .single()
@@ -234,5 +239,61 @@ export function useUpdateIssueStatus() {
       queryClient.invalidateQueries({ queryKey: ['lastNotes'] })
       queryClient.invalidateQueries({ queryKey: ['activityLog'] })
     },
+  })
+}
+
+export function useUpdateIssueTitle() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ issueId, title, userId }: { issueId: string; title: string; userId: string }) => {
+      const { error } = await supabase
+        .from('issues')
+        .update({ title, updated_by: userId, updated_at: new Date().toISOString() })
+        .eq('id', issueId)
+      if (error) throw error
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['issues'] }) },
+  })
+}
+
+export function useUpdateIssueProperty() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ issueId, propertyId, userId }: { issueId: string; propertyId: string; userId: string }) => {
+      const { error } = await supabase
+        .from('issues')
+        .update({ property_id: propertyId, updated_by: userId, updated_at: new Date().toISOString() })
+        .eq('id', issueId)
+      if (error) throw error
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['issues'] }) },
+  })
+}
+
+export function useUpdateIssueReservation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ issueId, reservationId, userId }: { issueId: string; reservationId: string | null; userId: string }) => {
+      const { error } = await supabase
+        .from('issues')
+        .update({ reservation_id: reservationId, updated_by: userId, updated_at: new Date().toISOString() })
+        .eq('id', issueId)
+      if (error) throw error
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['issues'] }) },
+  })
+}
+
+export function useUpdateIssueDueDate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ issueId, dueDate, userId }: { issueId: string; dueDate: string | null; userId: string }) => {
+      const { error } = await supabase
+        .from('issues')
+        .update({ due_date: dueDate, updated_by: userId, updated_at: new Date().toISOString() })
+        .eq('id', issueId)
+      if (error) throw error
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['issues'] }) },
   })
 }

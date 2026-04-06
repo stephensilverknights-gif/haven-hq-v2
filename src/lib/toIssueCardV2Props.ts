@@ -17,6 +17,9 @@ interface IssueCardV2PropsShape {
   cost: number | null
   openedAt: string
   recentActivity: RecentActivity | null
+  checkIn?: string | null
+  checkOut?: string | null
+  dueDate?: string | null
 }
 
 /**
@@ -68,6 +71,9 @@ export function toIssueCardV2Props(
     cost: cost != null ? Math.round(cost) : null,
     openedAt: issue.created_at,
     recentActivity,
+    checkIn: issue.reservation?.check_in ?? null,
+    checkOut: issue.reservation?.check_out ?? null,
+    dueDate: issue.due_date ?? null,
   }
 }
 

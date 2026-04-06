@@ -21,8 +21,9 @@ import { useApplyTemplate } from '@/hooks/useChecklist'
 import { useWorkflowTemplates } from '@/hooks/useWorkflowTemplates'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import type { IssueType, Priority } from '@/lib/types'
-import { ISSUE_TYPE_LABELS } from '@/lib/types'
+import { useIssueTypes } from '@/hooks/useIssueTypes'
+import ReservationPicker from '@/components/ReservationPicker'
+import type { Priority } from '@/lib/types'
 
 interface NewIssueModalProps {
   open: boolean
@@ -37,14 +38,16 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
   const { data: templates } = useWorkflowTemplates()
   const createIssue = useCreateIssue()
   const applyTemplate = useApplyTemplate()
+  const { types: issueTypes } = useIssueTypes()
   const isMobile = useIsMobile()
 
   const [propertyId, setPropertyId] = useState('')
-  const [type, setType] = useState<IssueType | ''>('')
+  const [type, setType] = useState('')
   const [priority, setPriority] = useState<Priority | ''>('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [initialNote, setInitialNote] = useState('')
+  const [reservationId, setReservationId] = useState('none')
   const [templateId, setTemplateId] = useState<string>('none')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -69,10 +72,11 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
       property_id: propertyId,
       title: title.trim(),
       description: description.trim() || undefined,
-      type: type as IssueType,
+      type,
       priority: priority as Priority,
       initial_note: initialNote.trim(),
       created_by: user.id,
+      reservation_id: reservationId !== 'none' ? reservationId : undefined,
     })
 
     // Apply workflow template if selected
@@ -90,6 +94,7 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
     setTitle('')
     setDescription('')
     setInitialNote('')
+    setReservationId('none')
     setTemplateId('none')
     setErrors({})
     onClose()
@@ -240,23 +245,28 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
                   )}
                 </div>
 
+                {/* Reservation (optional — only when property selected) */}
+                <ReservationPicker
+                  propertyId={propertyId || null}
+                  value={reservationId}
+                  onChange={setReservationId}
+                />
+
                 {/* Type */}
                 <div>
                   <label className="text-sm font-medium text-text-primary mb-1.5 block">
                     Task Type
                   </label>
-                  <Select value={type} onValueChange={(v) => setType(v as IssueType)}>
+                  <Select value={type} onValueChange={setType}>
                     <SelectTrigger className="rounded-[8px] min-h-[44px]">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {(Object.entries(ISSUE_TYPE_LABELS) as [IssueType, string][]).map(
-                        ([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        )
-                      )}
+                      {issueTypes.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {errors.type && (
@@ -303,13 +313,13 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
                 {/* Description */}
                 <div>
                   <label className="text-sm font-medium text-text-primary mb-1.5 block">
-                    Description
+                    Situational Context
                     <span className="text-text-muted font-normal ml-1">(optional)</span>
                   </label>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Additional context or details"
+                    placeholder="What's the situation? Any relevant context or details."
                     className="rounded-[8px] min-h-[80px]"
                   />
                 </div>

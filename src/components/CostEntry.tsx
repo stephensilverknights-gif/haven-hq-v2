@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import UserAvatar from '@/components/UserAvatar'
-import { useCostEntries, useAddCostEntry, useUpdateCostEntry, useDeleteCostEntry } from '@/hooks/useCostEntries'
+import { useCostEntries, useAddCostEntry, useUpdateCostEntry, useDeleteCostEntry, useToggleCostPaid } from '@/hooks/useCostEntries'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
-import type { Reimbursable } from '@/lib/types'
+import type { Reimbursable, CostDirection } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 // ── Entry type config ──────────────────────────────────────────────────────────
@@ -70,10 +70,12 @@ export default function CostEntry({ issueId }: CostEntryProps) {
   const addCost = useAddCostEntry()
   const updateCost = useUpdateCostEntry()
   const deleteCost = useDeleteCostEntry()
+  const togglePaid = useToggleCostPaid()
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [direction, setDirection] = useState<CostDirection>('expense')
   const [entryType, setEntryType] = useState<Reimbursable>('none')
   const [amount, setAmount] = useState('')
   const [vendor, setVendor] = useState('')
@@ -81,6 +83,7 @@ export default function CostEntry({ issueId }: CostEntryProps) {
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
 
   const resetForm = () => {
+    setDirection('expense')
     setEntryType('none')
     setAmount('')
     setVendor('')
@@ -141,6 +144,7 @@ export default function CostEntry({ issueId }: CostEntryProps) {
       vendor_name: vendor.trim() || undefined,
       description: description.trim(),
       reimbursable: entryType,
+      direction,
       receipt_url: receiptUrl,
     })
 
@@ -148,6 +152,8 @@ export default function CostEntry({ issueId }: CostEntryProps) {
   }
 
   const total = entries?.reduce((sum, e) => sum + Number(e.amount), 0) ?? 0
+  const totalExpenses = entries?.filter(e => e.direction === 'expense').reduce((sum, e) => sum + Number(e.amount), 0) ?? 0
+  const totalIncome = entries?.filter(e => e.direction === 'income').reduce((sum, e) => sum + Number(e.amount), 0) ?? 0
   const isSaving = addCost.isPending || updateCost.isPending
   const canSubmit = !!amount && parseFloat(amount) > 0 && description.trim().length > 0
 
@@ -160,7 +166,10 @@ export default function CostEntry({ issueId }: CostEntryProps) {
           Money
           {total > 0 && (
             <span className="text-text-muted font-normal normal-case ml-0.5">
-              · ${total.toFixed(2)}
+              {totalExpenses > 0 && <span style={{ color: '#FF6B6B' }}>-${totalExpenses.toFixed(2)}</span>}
+              {totalExpenses > 0 && totalIncome > 0 && ' · '}
+              {totalIncome > 0 && <span style={{ color: '#34D399' }}>+${totalIncome.toFixed(2)}</span>}
+              {totalExpenses === 0 && totalIncome === 0 && `· $${total.toFixed(2)}`}
             </span>
           )}
         </h3>
@@ -187,10 +196,48 @@ export default function CostEntry({ issueId }: CostEntryProps) {
           }}
         >
 
+          {/* Direction toggle */}
+          <div>
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">
+              Direction
+            </p>
+            <div className="grid grid-cols-2 gap-1.5 mb-3">
+              {([
+                { value: 'expense' as CostDirection, label: 'Expense', sublabel: 'Money out', color: '#EF4444' },
+                { value: 'income' as CostDirection, label: 'Income', sublabel: 'Owed to us', color: '#34D399' },
+              ]).map(({ value, label, sublabel, color }) => {
+                const isSelected = direction === value
+                return (
+                  <button
+                    key={value}
+                    onClick={() => setDirection(value)}
+                    className={cn(
+                      'flex items-start gap-2 px-2.5 py-2 rounded-[8px] border text-left transition-all duration-150',
+                      isSelected
+                        ? 'border-current'
+                        : 'bg-card-bg border-border text-text-secondary hover:bg-surface-hover'
+                    )}
+                    style={isSelected ? {
+                      backgroundColor: color + '15',
+                      borderColor: color + 'B3',
+                      color,
+                      boxShadow: `0 0 8px ${color}40, inset 0 0 6px ${color}1A`,
+                    } : {}}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold leading-tight">{label}</p>
+                      <p className="text-[10px] opacity-70 leading-tight mt-0.5">{sublabel}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Entry type pills */}
           <div>
             <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">
-              Entry Type
+              Category
             </p>
             <div className="grid grid-cols-2 gap-1.5">
               {ENTRY_TYPES.map(({ value, label, sublabel, icon: Icon, color }) => {
@@ -342,6 +389,32 @@ export default function CostEntry({ issueId }: CostEntryProps) {
                       />
                       {cfg.label}
                     </span>
+                    {entry.direction === 'income' && (
+                      <span
+                        className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px] border"
+                        style={{
+                          background: 'rgba(52,211,153,0.1)',
+                          color: '#34D399',
+                          borderColor: 'rgba(52,211,153,0.3)',
+                        }}
+                      >
+                        Income
+                      </span>
+                    )}
+                    <button
+                      onClick={() => togglePaid.mutate({ id: entry.id, issue_id: issueId, paid: !entry.paid })}
+                      className={cn(
+                        'inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px] border transition-all',
+                        entry.paid
+                          ? 'bg-watch-bg text-watch-text border-watch-border'
+                          : 'bg-urgent-bg text-urgent-text border-urgent-border'
+                      )}
+                    >
+                      {!entry.paid && (
+                        <span className="w-[4px] h-[4px] rounded-full bg-urgent-text animate-pulse" />
+                      )}
+                      {entry.paid ? 'Paid' : 'Unpaid'}
+                    </button>
                     {entry.vendor_name && (
                       <span className="text-[12px] text-text-muted">{entry.vendor_name}</span>
                     )}

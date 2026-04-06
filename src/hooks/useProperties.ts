@@ -55,12 +55,13 @@ function invalidate(queryClient: ReturnType<typeof useQueryClient>) {
 export function useCreateProperty() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (vars: { name: string; market: string }) => {
+    mutationFn: async (vars: { name: string; market: string; hostaway_listing_id?: string }) => {
       const { error } = await supabase.from('properties').insert({
         name: vars.name,
         market: vars.market,
         color_tag: '#64748B',
         active: true,
+        hostaway_listing_id: vars.hostaway_listing_id || null,
       })
       if (error) throw error
     },
@@ -71,10 +72,14 @@ export function useCreateProperty() {
 export function useUpdateProperty() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (vars: { id: string; name: string; market: string }) => {
+    mutationFn: async (vars: { id: string; name: string; market: string; hostaway_listing_id?: string }) => {
       const { error } = await supabase
         .from('properties')
-        .update({ name: vars.name, market: vars.market })
+        .update({
+          name: vars.name,
+          market: vars.market,
+          hostaway_listing_id: vars.hostaway_listing_id ?? null,
+        })
         .eq('id', vars.id)
       if (error) throw error
     },

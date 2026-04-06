@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { CostEntry, Reimbursable } from '@/lib/types'
+import type { CostEntry, Reimbursable, CostDirection } from '@/lib/types'
 
 async function fetchCostEntries(issueId: string): Promise<CostEntry[]> {
   const { data, error } = await supabase
@@ -101,11 +101,29 @@ export function useAddCostEntry() {
       receipt_url?: string
       reimbursable: Reimbursable
       reimbursable_from?: string
+      direction?: CostDirection
     }) => {
       const { error } = await supabase
         .from('cost_entries')
-        .insert(input)
+        .insert({ ...input, direction: input.direction ?? 'expense' })
 
+      if (error) throw error
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['costEntries', variables.issue_id] })
+      queryClient.invalidateQueries({ queryKey: ['allCostEntries'] })
+    },
+  })
+}
+
+export function useToggleCostPaid() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { id: string; issue_id: string; paid: boolean }) => {
+      const { error } = await supabase
+        .from('cost_entries')
+        .update({ paid: input.paid })
+        .eq('id', input.id)
       if (error) throw error
     },
     onSuccess: (_data, variables) => {

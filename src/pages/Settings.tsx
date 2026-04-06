@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Pencil, Trash2, GripVertical, X, ChevronRight, Building2, MapPin, ChevronDown, Settings2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, GripVertical, X, ChevronRight, Building2, MapPin, ChevronDown, Settings2, Tag } from 'lucide-react'
 import TopNav from '@/components/TopNav'
 import NeonButton from '@/components/NeonButton'
 import { Button } from '@/components/ui/button'
@@ -19,8 +19,10 @@ import {
   useTogglePropertyActive,
 } from '@/hooks/useProperties'
 import { useMarkets, useCreateMarket, useDeleteMarket } from '@/hooks/useMarkets'
+import { useIssueTypes } from '@/hooks/useIssueTypes'
+import { useCreateIssueType, useUpdateIssueType, useDeleteIssueType } from '@/hooks/useIssueTypeAdmin'
 import { useAuth } from '@/contexts/AuthContext'
-import type { WorkflowTemplate, WorkflowTemplateStep, Property } from '@/lib/types'
+import type { WorkflowTemplate, WorkflowTemplateStep, Property, IssueTypeRecord } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 // ── Property form (create / edit) ─────────────────────────────────────────────
@@ -34,11 +36,12 @@ function PropertyForm({
 }: {
   initial?: Property
   lockedMarket?: string
-  onSave: (name: string, market: string) => void
+  onSave: (name: string, market: string, hostawayListingId?: string) => void
   onCancel: () => void
   isSaving: boolean
 }) {
   const [name, setName] = useState(initial?.name ?? '')
+  const [hostawayId, setHostawayId] = useState(initial?.hostaway_listing_id ?? '')
   const market = lockedMarket ?? initial?.market ?? ''
 
   const valid = name.trim().length > 0 && market.length > 0
@@ -53,18 +56,29 @@ function PropertyForm({
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && valid && !isSaving) onSave(name.trim(), market) }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && valid && !isSaving) onSave(name.trim(), market, hostawayId.trim() || undefined) }}
             placeholder="e.g. Sherman Arms"
             className="rounded-[8px] text-sm"
             autoFocus
           />
         </div>
       </div>
+      <div>
+        <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
+          Hostaway Listing ID <span className="font-normal normal-case">(optional)</span>
+        </label>
+        <Input
+          value={hostawayId}
+          onChange={(e) => setHostawayId(e.target.value)}
+          placeholder="e.g. 123456"
+          className="rounded-[8px] text-sm"
+        />
+      </div>
       <div className="flex gap-2">
         <NeonButton
           size="sm"
           withBloom={false}
-          onClick={() => onSave(name.trim(), market)}
+          onClick={() => onSave(name.trim(), market, hostawayId.trim() || undefined)}
           disabled={!valid || isSaving}
         >
           {isSaving ? 'Saving…' : initial ? 'Save' : 'Add Property'}
@@ -188,8 +202,8 @@ function MarketGroup({
                     <PropertyForm
                       initial={property}
                       lockedMarket={marketName}
-                      onSave={async (name, market) => {
-                        await updateProperty.mutateAsync({ id: property.id, name, market })
+                      onSave={async (name, market, hostawayListingId) => {
+                        await updateProperty.mutateAsync({ id: property.id, name, market, hostaway_listing_id: hostawayListingId })
                         setEditingId(null)
                       }}
                       onCancel={() => setEditingId(null)}
@@ -217,8 +231,8 @@ function MarketGroup({
                   >
                     <PropertyForm
                       lockedMarket={marketName}
-                      onSave={async (name, market) => {
-                        await createProperty.mutateAsync({ name, market })
+                      onSave={async (name, market, hostawayListingId) => {
+                        await createProperty.mutateAsync({ name, market, hostaway_listing_id: hostawayListingId })
                         setAdding(false)
                       }}
                       onCancel={() => setAdding(false)}
@@ -605,6 +619,161 @@ function TemplateRow({
   )
 }
 
+// ── Task type row ────────────────────────────────────────────────────────────
+
+function TaskTypeRow({
+  issueType,
+  onToggleActive,
+  isToggling,
+}: {
+  issueType: IssueTypeRecord
+  onToggleActive: () => void
+  isToggling: boolean
+}) {
+  return (
+    <div className={cn(
+      'bg-card-bg neon-border rounded-[10px] px-3 py-2.5 flex items-center gap-3',
+      !issueType.active && 'opacity-40'
+    )}>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-semibold text-text-primary leading-tight truncate">{issueType.label}</p>
+        <p className="text-[11px] text-text-muted">{issueType.id}</p>
+      </div>
+      <button
+        onClick={onToggleActive}
+        disabled={isToggling}
+        className={cn(
+          'relative w-8 h-[18px] rounded-full transition-colors duration-200 focus:outline-none shrink-0',
+          issueType.active ? 'bg-haven-indigo' : 'bg-zinc-600'
+        )}
+        title={issueType.active ? 'Active — click to deactivate' : 'Inactive — click to activate'}
+      >
+        <span className={cn(
+          'absolute top-0.5 left-0.5 w-[14px] h-[14px] bg-white rounded-full shadow transition-transform duration-200',
+          issueType.active ? 'translate-x-[14px]' : 'translate-x-0'
+        )} />
+      </button>
+    </div>
+  )
+}
+
+// ── Task types section ───────────────────────────────────────────────────────
+
+function TaskTypesSection() {
+  const { types: issueTypes } = useIssueTypes()
+  const createType = useCreateIssueType()
+  const updateType = useUpdateIssueType()
+  const deleteType = useDeleteIssueType()
+  const [adding, setAdding] = useState(false)
+  const [newSlug, setNewSlug] = useState('')
+  const [newLabel, setNewLabel] = useState('')
+
+  const handleAdd = async () => {
+    const slug = newSlug.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+    const label = newLabel.trim()
+    if (!slug || !label) return
+    await createType.mutateAsync({ id: slug, label, sort_order: issueTypes.length })
+    setNewSlug('')
+    setNewLabel('')
+    setAdding(false)
+  }
+
+  return (
+    <section className="mb-10">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-sm font-semibold text-text-primary">Task Types</h2>
+          <p className="text-[13px] text-text-muted mt-0.5">
+            Categories shown in the Task Type dropdown. Toggle off to hide.
+          </p>
+        </div>
+        {!adding && (
+          <NeonButton
+            size="sm"
+            withBloom={false}
+            onClick={() => setAdding(true)}
+            className="gap-1.5 shrink-0 flex items-center"
+          >
+            <Plus size={14} strokeWidth={1.5} />
+            New Type
+          </NeonButton>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {adding && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            className="mb-3"
+          >
+            <div className="bg-surface neon-border rounded-[10px] p-3 space-y-3">
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
+                    Label
+                  </label>
+                  <Input
+                    value={newLabel}
+                    onChange={(e) => setNewLabel(e.target.value)}
+                    placeholder="e.g. Reservation"
+                    className="rounded-[8px] text-sm"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
+                    Slug
+                  </label>
+                  <Input
+                    value={newSlug}
+                    onChange={(e) => setNewSlug(e.target.value)}
+                    placeholder="e.g. reservation"
+                    className="rounded-[8px] text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <NeonButton
+                  size="sm"
+                  withBloom={false}
+                  onClick={handleAdd}
+                  disabled={!newSlug.trim() || !newLabel.trim() || createType.isPending}
+                >
+                  {createType.isPending ? 'Adding…' : 'Add Type'}
+                </NeonButton>
+                <Button size="sm" variant="outline" onClick={() => setAdding(false)} className="rounded-[8px]">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {issueTypes.length > 0 ? (
+        <div className="space-y-1.5">
+          {issueTypes.map((t) => (
+            <TaskTypeRow
+              key={t.id}
+              issueType={t}
+              onToggleActive={() => updateType.mutate({ id: t.id, active: !t.active })}
+              isToggling={updateType.isPending}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="border border-dashed border-border rounded-[12px] py-10 text-center">
+          <Tag size={22} strokeWidth={1} className="text-text-muted mx-auto mb-2 opacity-40" />
+          <p className="text-sm text-text-muted">No task types defined</p>
+        </div>
+      )}
+    </section>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Settings() {
@@ -699,6 +868,11 @@ export default function Settings() {
             </div>
           )}
         </section>
+
+        <Separator className="mb-10" />
+
+        {/* Task Types section */}
+        <TaskTypesSection />
 
         <Separator className="mb-10" />
 

@@ -1,7 +1,8 @@
-export type IssueType = 'guest_request' | 'maintenance' | 'cleaner'
+export type IssueType = string  // dynamic from issue_types table
 export type Priority = 'on_fire' | 'urgent' | 'watch'
 export type IssueStatus = 'in_progress' | 'stuck' | 'resolved'
 export type Reimbursable = 'none' | 'guest_owes' | 'landlord_owes' | 'haven_owes'
+export type CostDirection = 'expense' | 'income'
 
 export interface Profile {
   id: string
@@ -21,6 +22,30 @@ export interface Property {
   address: string | null
   color_tag: string
   active: boolean
+  hostaway_listing_id: string | null
+  created_at: string
+}
+
+export interface IssueTypeRecord {
+  id: string       // slug e.g. 'guest_request'
+  label: string
+  icon: string     // Lucide icon name
+  sort_order: number
+  active: boolean
+  created_at: string
+}
+
+export interface Reservation {
+  id: string
+  property_id: string | null
+  hostaway_listing_id: string | null
+  guest_name: string | null
+  guest_email: string | null
+  check_in: string | null
+  check_out: string | null
+  status: string | null
+  raw_data: unknown
+  synced_at: string
   created_at: string
 }
 
@@ -34,6 +59,8 @@ export interface Issue {
   status: IssueStatus
   slack_note: string | null
   slack_note_updated_at: string | null
+  reservation_id: string | null
+  due_date: string | null
   created_by: string
   created_at: string
   updated_by: string | null
@@ -43,6 +70,7 @@ export interface Issue {
   property?: Property
   creator?: Profile
   updater?: Profile
+  reservation?: Reservation
 }
 
 export interface ActivityLogEntry {
@@ -67,6 +95,8 @@ export interface CostEntry {
   receipt_url: string | null
   reimbursable: Reimbursable
   reimbursable_from: string | null
+  direction: CostDirection
+  paid: boolean
   date: string
   created_at: string
   // Joined
@@ -74,11 +104,14 @@ export interface CostEntry {
   issue?: Issue & { property?: Property }
 }
 
-// Display helpers
-export const ISSUE_TYPE_LABELS: Record<IssueType, string> = {
+// Display helpers — fallback while dynamic issue_types load
+export const ISSUE_TYPE_LABELS: Record<string, string> = {
   guest_request: 'Guest Request',
   maintenance: 'Maintenance',
   cleaner: 'Cleaner',
+  vendor: 'Vendor',
+  reservation: 'Reservation',
+  parking: 'Parking',
 }
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
