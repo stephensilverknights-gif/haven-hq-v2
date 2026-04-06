@@ -19,8 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useUpdateIssueStatus, useUpdateIssuePriority, useUpdateIssueTitle, useUpdateIssueProperty, useUpdateIssueDueDate } from '@/hooks/useIssues'
+import { useUpdateIssueStatus, useUpdateIssuePriority, useUpdateIssueTitle, useUpdateIssueProperty, useUpdateIssueDueDate, useUpdateIssueReservation } from '@/hooks/useIssues'
 import { useProperties } from '@/hooks/useProperties'
+import ReservationPicker from '@/components/ReservationPicker'
 import { useChecklist, useToggleChecklistItem, useApplyTemplate, useDeleteChecklist } from '@/hooks/useChecklist'
 import { useWorkflowTemplates } from '@/hooks/useWorkflowTemplates'
 import { useAuth } from '@/contexts/AuthContext'
@@ -366,6 +367,7 @@ function IssueDetailContent({
   const updateTitle = useUpdateIssueTitle()
   const updateProperty = useUpdateIssueProperty()
   const updateDueDate = useUpdateIssueDueDate()
+  const updateReservation = useUpdateIssueReservation()
   const [statusNote, setStatusNote] = useState('')
   const [pendingStatus, setPendingStatus] = useState<IssueStatus | null>(null)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -533,8 +535,8 @@ function IssueDetailContent({
               {typeLabels[issue.type] ?? issue.type}
             </span>
 
-            {/* Reservation banner */}
-            {issue.reservation && (
+            {/* Reservation banner + picker */}
+            {issue.reservation ? (
               <div
                 className="mt-3 rounded-[8px] px-3 py-2.5"
                 style={{
@@ -543,11 +545,19 @@ function IssueDetailContent({
                   boxShadow: '0 0 8px rgba(123,124,248,0.08)',
                 }}
               >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <User size={12} strokeWidth={1.5} color="#9596FF" />
-                  <span className="text-[13px] font-semibold" style={{ color: '#E8E8F2' }}>
-                    {issue.reservation.guest_name ?? 'Guest'}
-                  </span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <User size={12} strokeWidth={1.5} color="#9596FF" />
+                    <span className="text-[13px] font-semibold" style={{ color: '#E8E8F2' }}>
+                      {issue.reservation.guest_name ?? 'Guest'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => user && updateReservation.mutate({ issueId: issue.id, reservationId: null, userId: user.id })}
+                    className="text-[11px] text-text-muted hover:text-red-400 transition-colors"
+                  >
+                    Unlink
+                  </button>
                 </div>
                 <div className="flex items-center gap-2 text-[12px]" style={{ color: '#9596FF' }}>
                   <Calendar size={11} strokeWidth={1.5} />
@@ -557,6 +567,18 @@ function IssueDetailContent({
                     {issue.reservation.check_out ? format(new Date(issue.reservation.check_out), 'MMM d, h:mm a') : '?'}
                   </span>
                 </div>
+              </div>
+            ) : (
+              <div className="mt-3">
+                <ReservationPicker
+                  propertyId={issue.property_id}
+                  value="none"
+                  onChange={(resId) => {
+                    if (resId !== 'none' && user) {
+                      updateReservation.mutate({ issueId: issue.id, reservationId: resId, userId: user.id })
+                    }
+                  }}
+                />
               </div>
             )}
 
