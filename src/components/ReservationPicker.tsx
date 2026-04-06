@@ -1,4 +1,5 @@
-import { format, isPast } from 'date-fns'
+import { useEffect, useRef } from 'react'
+import { format, isPast, differenceInMinutes } from 'date-fns'
 import { RefreshCw } from 'lucide-react'
 import {
   Select,
@@ -16,8 +17,25 @@ interface ReservationPickerProps {
 }
 
 export default function ReservationPicker({ propertyId, value, onChange }: ReservationPickerProps) {
-  const { data: reservations, isLoading } = useReservations(propertyId)
+  const { data: reservations, isLoading, isFetched } = useReservations(propertyId)
   const syncMutation = useSyncReservations()
+  const autoSyncedRef = useRef<string | null>(null)
+
+  // Auto-sync when picker opens for a property:
+  // - If no reservations cached yet, or
+  // - If the most recent sync is older than 5 minutes
+  useEffect(() => {
+    if (!propertyId || syncMutation.isPending || !isFetched) return
+    if (autoSyncedRef.current === propertyId) return // already auto-synced this property
+
+    const needsSync = !reservations || reservations.length === 0 ||
+      (reservations[0]?.synced_at && differenceInMinutes(new Date(), new Date(reservations[0].synced_at)) > 5)
+
+    if (needsSync) {
+      autoSyncedRef.current = propertyId
+      syncMutation.mutate(propertyId)
+    }
+  }, [propertyId, isFetched])
 
   if (!propertyId) return null
 
