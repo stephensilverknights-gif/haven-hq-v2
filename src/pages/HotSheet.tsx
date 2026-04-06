@@ -1,6 +1,23 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Flame, Clock, Eye, ChevronDown, LayoutList, Columns3 } from 'lucide-react'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import TopNav from '@/components/TopNav'
 import IssueCardV2 from '@/components/IssueCardV2'
 import NewIssueModal from '@/components/NewIssueModal'
@@ -13,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useIssues } from '@/hooks/useIssues'
+import { useIssues, useReorderIssues } from '@/hooks/useIssues'
 import { useProperties } from '@/hooks/useProperties'
 import { useAllCostEntries } from '@/hooks/useCostEntries'
 import { useLastCompletedChecklist } from '@/hooks/useLastCompletedChecklist'
@@ -90,6 +107,45 @@ const priorityGroups: {
   },
 ]
 
+function SortableIssueCard({
+  issue,
+  costEntries,
+  lastCompletedByIssue,
+  lastNotes,
+  selectedId,
+  onSelect,
+}: {
+  issue: Issue
+  costEntries: CostEntry[] | undefined
+  lastCompletedByIssue: Record<string, import('@/hooks/useLastCompletedChecklist').LastCompletedChecklistItem> | undefined
+  lastNotes: Record<string, { note: string; author: string } | undefined>
+  selectedId: string | null
+  onSelect: (id: string) => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: issue.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    cursor: 'grab' as const,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <IssueCardV2
+        {...toIssueCardV2Props(issue, {
+          costEntries,
+          lastCompletedChecklistItem: lastCompletedByIssue?.[issue.id],
+          lastNote: lastNotes[issue.id],
+        })}
+        isSelected={selectedId === issue.id}
+        onClick={() => onSelect(issue.id)}
+      />
+    </div>
+  )
+}
+
 function IssueGroup({
   priority: _priority,
   icon: Icon,
@@ -152,26 +208,21 @@ function IssueGroup({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-2 mb-1 min-w-0">
-        {issues.map((issue, i) => (
-          <motion.div
-            key={issue.id}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1], delay: i * 0.03 }}
-          >
-            <IssueCardV2
-              {...toIssueCardV2Props(issue, {
-                costEntries: costEntriesByIssue[issue.id],
-                lastCompletedChecklistItem: lastCompletedByIssue?.[issue.id],
-                lastNote: lastNotes[issue.id],
-              })}
-              isSelected={selectedId === issue.id}
-              onClick={() => onSelect(issue.id)}
+      <SortableContext items={issues.map(i => i.id)} strategy={verticalListSortingStrategy}>
+        <div className="grid grid-cols-1 gap-2 mb-1 min-w-0">
+          {issues.map((issue) => (
+            <SortableIssueCard
+              key={issue.id}
+              issue={issue}
+              costEntries={costEntriesByIssue[issue.id]}
+              lastCompletedByIssue={lastCompletedByIssue}
+              lastNotes={lastNotes}
+              selectedId={selectedId}
+              onSelect={onSelect}
             />
-          </motion.div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </SortableContext>
     </motion.div>
   )
 }
@@ -197,6 +248,13 @@ export default function HotSheet() {
   const [filterProperty, setFilterProperty] = useState<string>('all')
 
   const { types: issueTypes } = useIssueTypes()
+  const reorderIssues = useReorderIssues()
+  const [draggedIssue, setDraggedIssue] = useState<Issue | null>(null)
+
+  const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  const sensors = useSensors(pointerSensor, touchSensor)
+
   const { data: allCostEntries } = useAllCostEntries()
   const { data: lastCompletedByIssue } = useLastCompletedChecklist()
 
@@ -242,6 +300,36 @@ export default function HotSheet() {
   const hasActiveFilters = filterPriority !== 'all' || filterType !== 'all' || filterProperty !== 'all'
 
   const selectedIssue = allIssues.find((i) => i.id === selectedIssueId) ?? null
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const issue = filteredIssues.find(i => i.id === event.active.id)
+    if (issue) setDraggedIssue(issue)
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDraggedIssue(null)
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    // Find which priority group both cards belong to
+    const activeIssue = filteredIssues.find(i => i.id === active.id)
+    const overIssue = filteredIssues.find(i => i.id === over.id)
+    if (!activeIssue || !overIssue || activeIssue.priority !== overIssue.priority) return
+
+    const group = grouped[activeIssue.priority as Priority]
+    const oldIndex = group.findIndex(i => i.id === active.id)
+    const newIndex = group.findIndex(i => i.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    // Reorder the array
+    const reordered = [...group]
+    const [moved] = reordered.splice(oldIndex, 1)
+    reordered.splice(newIndex, 0, moved)
+
+    // Assign new sort_order values
+    const updates = reordered.map((issue, i) => ({ id: issue.id, sort_order: i + 1 }))
+    reorderIssues.mutate(updates)
+  }
 
   return (
     <div className="h-screen flex flex-col bg-page-bg">
@@ -356,7 +444,7 @@ export default function HotSheet() {
                     onSelect={setSelectedIssueId}
                   />
                 ) : filteredIssues.length > 0 ? (
-                  <>
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                     <SummaryStrip counts={counts} />
                     <div className="flex flex-col gap-5">
                       {priorityGroups.map(({ priority, icon, labelClass, dotColor, shimmer, label }) => (
@@ -377,7 +465,20 @@ export default function HotSheet() {
                         />
                       ))}
                     </div>
-                  </>
+                    <DragOverlay>
+                      {draggedIssue && (
+                        <div style={{ width: '100%', maxWidth: 700, opacity: 0.9 }}>
+                          <IssueCardV2
+                            {...toIssueCardV2Props(draggedIssue, {
+                              costEntries: costEntriesByIssue[draggedIssue.id],
+                              lastCompletedChecklistItem: lastCompletedByIssue?.[draggedIssue.id],
+                              lastNote: lastNotes[draggedIssue.id],
+                            })}
+                          />
+                        </div>
+                      )}
+                    </DragOverlay>
+                  </DndContext>
                 ) : null}
 
                 {/* Resolved section — hidden in board view */}

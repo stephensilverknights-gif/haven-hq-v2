@@ -65,6 +65,7 @@ export interface Issue {
   created_at: string
   updated_by: string | null
   updated_at: string
+  sort_order: number
   resolved_at: string | null
   // Joined relations
   property?: Property

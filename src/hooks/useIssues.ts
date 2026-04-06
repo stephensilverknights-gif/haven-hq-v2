@@ -95,7 +95,7 @@ export function useIssues() {
     .sort((a, b) => {
       const pDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
       if (pDiff !== 0) return pDiff
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0)
     })
 
   const counts = {
@@ -293,6 +293,23 @@ export function useUpdateIssueDueDate() {
         .update({ due_date: dueDate, updated_by: userId, updated_at: new Date().toISOString() })
         .eq('id', issueId)
       if (error) throw error
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['issues'] }) },
+  })
+}
+
+export function useReorderIssues() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (updates: { id: string; sort_order: number }[]) => {
+      // Batch update sort_order for each issue
+      for (const { id, sort_order } of updates) {
+        const { error } = await supabase
+          .from('issues')
+          .update({ sort_order })
+          .eq('id', id)
+        if (error) throw error
+      }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['issues'] }) },
   })
