@@ -33,6 +33,7 @@ interface IssueCardV2Props {
   checkIn?: string | null
   checkOut?: string | null
   dueDate?: string | null
+  assignedCleaner?: string | null
   onClick?: () => void
   isSelected?: boolean
 }
@@ -137,6 +138,7 @@ export default function IssueCardV2({
   checkIn,
   checkOut,
   dueDate,
+  assignedCleaner,
   onClick,
   isSelected = false,
 }: IssueCardV2Props) {
@@ -224,7 +226,7 @@ export default function IssueCardV2({
             />
             <span
               className="text-[13px] font-semibold shrink-0"
-              style={{ color: '#E8E8F2' }}
+              style={{ color: '#9090B8' }}
             >
               {property}
             </span>
@@ -234,6 +236,17 @@ export default function IssueCardV2({
             >
               · {market}
             </span>
+            {assignedCleaner && (
+              <>
+                <span style={{ color: '#383860' }} className="text-[11px] shrink-0">·</span>
+                <span
+                  className="text-[11px] font-medium shrink-0 truncate max-w-[80px]"
+                  style={{ color: '#9596FF' }}
+                >
+                  {assignedCleaner}
+                </span>
+              </>
+            )}
             <div className="flex-1" />
             <span
               className="shrink-0 inline-flex items-center px-2 py-[1px] text-[10px] font-semibold whitespace-nowrap"

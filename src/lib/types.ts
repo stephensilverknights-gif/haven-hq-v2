@@ -61,6 +61,7 @@ export interface Issue {
   slack_note_updated_at: string | null
   reservation_id: string | null
   due_date: string | null
+  assigned_cleaner: string | null
   created_by: string
   created_at: string
   updated_by: string | null

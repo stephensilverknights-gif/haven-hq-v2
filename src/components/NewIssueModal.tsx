@@ -47,6 +47,7 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [initialNote, setInitialNote] = useState('')
+  const [assignedCleaner, setAssignedCleaner] = useState('')
   const [reservationId, setReservationId] = useState('none')
   const [templateId, setTemplateId] = useState<string>('none')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -77,6 +78,7 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
       initial_note: initialNote.trim(),
       created_by: user.id,
       reservation_id: reservationId !== 'none' ? reservationId : undefined,
+      assigned_cleaner: assignedCleaner.trim() || undefined,
     })
 
     // Apply workflow template if selected
@@ -94,6 +96,7 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
     setTitle('')
     setDescription('')
     setInitialNote('')
+    setAssignedCleaner('')
     setReservationId('none')
     setTemplateId('none')
     setErrors({})
@@ -292,6 +295,20 @@ export default function NewIssueModal({ open, onClose }: NewIssueModalProps) {
                   {errors.priority && (
                     <p className="text-xs text-red-600 mt-1">{errors.priority}</p>
                   )}
+                </div>
+
+                {/* Assigned Cleaner */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary mb-1.5 block">
+                    Assigned Cleaner
+                    <span className="text-text-muted font-normal ml-1">(optional)</span>
+                  </label>
+                  <Input
+                    value={assignedCleaner}
+                    onChange={(e) => setAssignedCleaner(e.target.value)}
+                    placeholder="e.g. Hannah"
+                    className="rounded-[8px] min-h-[44px]"
+                  />
                 </div>
 
                 {/* Title */}

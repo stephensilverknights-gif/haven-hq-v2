@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useUpdateIssueStatus, useUpdateIssuePriority, useUpdateIssueTitle, useUpdateIssueProperty, useUpdateIssueDueDate, useUpdateIssueReservation } from '@/hooks/useIssues'
+import { useUpdateIssueStatus, useUpdateIssuePriority, useUpdateIssueTitle, useUpdateIssueProperty, useUpdateIssueDueDate, useUpdateIssueReservation, useUpdateIssueCleaner } from '@/hooks/useIssues'
 import { useProperties } from '@/hooks/useProperties'
 import ReservationPicker from '@/components/ReservationPicker'
 import { useChecklist, useToggleChecklistItem, useApplyTemplate, useDeleteChecklist } from '@/hooks/useChecklist'
@@ -368,11 +368,14 @@ function IssueDetailContent({
   const updateProperty = useUpdateIssueProperty()
   const updateDueDate = useUpdateIssueDueDate()
   const updateReservation = useUpdateIssueReservation()
+  const updateCleaner = useUpdateIssueCleaner()
   const [statusNote, setStatusNote] = useState('')
   const [pendingStatus, setPendingStatus] = useState<IssueStatus | null>(null)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
   const [editingProperty, setEditingProperty] = useState(false)
+  const [editingCleaner, setEditingCleaner] = useState(false)
+  const [cleanerDraft, setCleanerDraft] = useState('')
 
   const handlePriorityChange = (priority: Priority) => {
     if (!user) return
@@ -534,6 +537,40 @@ function IssueDetailContent({
             <span className="text-xs text-text-muted">
               {typeLabels[issue.type] ?? issue.type}
             </span>
+
+            {/* Assigned Cleaner (click-to-edit) */}
+            <div className="mt-2">
+              <label className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                Assigned Cleaner
+              </label>
+              {editingCleaner ? (
+                <Input
+                  value={cleanerDraft}
+                  onChange={(e) => setCleanerDraft(e.target.value)}
+                  onBlur={() => {
+                    if (user && cleanerDraft.trim() !== (issue.assigned_cleaner ?? '')) {
+                      updateCleaner.mutate({ issueId: issue.id, cleaner: cleanerDraft.trim() || null, userId: user.id })
+                    }
+                    setEditingCleaner(false)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                    if (e.key === 'Escape') setEditingCleaner(false)
+                  }}
+                  placeholder="e.g. Hannah"
+                  className="rounded-[8px] text-sm mt-0.5"
+                  autoFocus
+                />
+              ) : (
+                <p
+                  className="text-sm text-text-secondary mt-0.5 cursor-pointer hover:text-haven-indigo transition-colors group flex items-center gap-1.5"
+                  onClick={() => { setCleanerDraft(issue.assigned_cleaner ?? ''); setEditingCleaner(true) }}
+                >
+                  {issue.assigned_cleaner || <span className="text-text-muted italic">None — click to assign</span>}
+                  <Pencil size={11} strokeWidth={1.5} className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
+                </p>
+              )}
+            </div>
 
             {/* Reservation banner + picker */}
             {issue.reservation ? (

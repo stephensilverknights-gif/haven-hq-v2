@@ -20,6 +20,7 @@ interface IssueCardV2PropsShape {
   checkIn?: string | null
   checkOut?: string | null
   dueDate?: string | null
+  assignedCleaner?: string | null
 }
 
 /**
@@ -74,6 +75,7 @@ export function toIssueCardV2Props(
     checkIn: issue.reservation?.check_in ?? null,
     checkOut: issue.reservation?.check_out ?? null,
     dueDate: issue.due_date ?? null,
+    assignedCleaner: issue.assigned_cleaner ?? null,
   }
 }
 

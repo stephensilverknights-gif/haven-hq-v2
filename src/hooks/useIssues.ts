@@ -13,6 +13,7 @@ interface CreateIssueInput {
   created_by: string
   reservation_id?: string
   due_date?: string
+  assigned_cleaner?: string
 }
 
 async function fetchIssues(): Promise<Issue[]> {
@@ -132,6 +133,7 @@ export function useCreateIssue() {
           created_by: input.created_by,
           reservation_id: input.reservation_id || null,
           due_date: input.due_date || null,
+          assigned_cleaner: input.assigned_cleaner || null,
         })
         .select()
         .single()
@@ -291,6 +293,20 @@ export function useUpdateIssueDueDate() {
       const { error } = await supabase
         .from('issues')
         .update({ due_date: dueDate, updated_by: userId, updated_at: new Date().toISOString() })
+        .eq('id', issueId)
+      if (error) throw error
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['issues'] }) },
+  })
+}
+
+export function useUpdateIssueCleaner() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ issueId, cleaner, userId }: { issueId: string; cleaner: string | null; userId: string }) => {
+      const { error } = await supabase
+        .from('issues')
+        .update({ assigned_cleaner: cleaner, updated_by: userId, updated_at: new Date().toISOString() })
         .eq('id', issueId)
       if (error) throw error
     },
