@@ -247,6 +247,17 @@ export default function IssueCardV2({
                 </span>
               </>
             )}
+            {(checkIn || checkOut) && (
+              <>
+                <span style={{ color: '#383860' }} className="text-[11px] shrink-0">·</span>
+                <span
+                  className="text-[11px] shrink-0 whitespace-nowrap"
+                  style={{ color: '#7878A8' }}
+                >
+                  {checkIn ? format(new Date(checkIn), 'MMM d') : '?'}–{checkOut ? format(new Date(checkOut), 'MMM d') : '?'}
+                </span>
+              </>
+            )}
             <div className="flex-1" />
             <span
               className="shrink-0 inline-flex items-center px-2 py-[1px] text-[10px] font-semibold whitespace-nowrap"
@@ -277,19 +288,7 @@ export default function IssueCardV2({
             </p>
           </div>
 
-          {/* Row 3: check-in/check-out (only when reservation linked) */}
-          {(checkIn || checkOut) && (
-            <div className="flex items-center gap-1.5 mt-[2px] min-w-0 h-[16px]">
-              <CalendarCheck size={10} strokeWidth={1.5} color="#9596FF" className="shrink-0" style={{ filter: 'drop-shadow(0 0 3px rgba(123,124,248,0.5))' }} />
-              <span className="text-[11px] truncate" style={{ color: '#9596FF' }}>
-                {checkIn ? format(new Date(checkIn), 'MMM d, h:mm a') : '?'}
-                {' → '}
-                {checkOut ? format(new Date(checkOut), 'MMM d, h:mm a') : '?'}
-              </span>
-            </div>
-          )}
-
-          {/* Row 4: activity (fixed 1-line, reserved even when empty) */}
+          {/* Row 3: activity (fixed 1-line, reserved even when empty) */}
           <div className="flex items-center gap-1.5 mt-[3px] min-w-0 h-[16px]">
             {recentActivity ? (
               <>
