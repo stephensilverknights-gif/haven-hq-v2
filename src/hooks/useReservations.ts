@@ -6,12 +6,12 @@ export function useReservations(propertyId: string | null) {
   return useQuery({
     queryKey: ['reservations', propertyId],
     queryFn: async (): Promise<Reservation[]> => {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const lookback = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
       const { data, error } = await supabase
         .from('reservations')
         .select('*')
         .eq('property_id', propertyId!)
-        .or(`check_in.gte.${sevenDaysAgo},check_out.gte.${new Date().toISOString()}`)
+        .or(`check_in.gte.${lookback},check_out.gte.${lookback}`)
         .order('check_in', { ascending: true })
 
       if (error) throw error

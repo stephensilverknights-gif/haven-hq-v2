@@ -1,6 +1,6 @@
 // Supabase Edge Function: hostaway-reservations
 // Syncs reservations from Hostaway API → public.reservations table.
-// Fetches past 7 days + next 30 days for a given property (or all mapped properties).
+// Fetches past 30 days + next 30 days for a given property (or all mapped properties).
 //
 // Deploy: supabase functions deploy hostaway-reservations
 // Required secrets: HOSTAWAY_CLIENT_ID, HOSTAWAY_API_SECRET
@@ -135,9 +135,9 @@ Deno.serve(async (req: Request) => {
 
     const hostawayToken = await authenticate(clientId, apiSecret)
 
-    // Date range: 7 days back, 30 days forward
+    // Date range: 30 days back, 30 days forward
     const now = new Date()
-    const startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
     let totalSynced = 0
