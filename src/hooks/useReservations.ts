@@ -6,7 +6,7 @@ export function useReservations(propertyId: string | null) {
   return useQuery({
     queryKey: ['reservations', propertyId],
     queryFn: async (): Promise<Reservation[]> => {
-      const lookback = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      const lookback = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
       const { data, error } = await supabase
         .from('reservations')
         .select('*')
