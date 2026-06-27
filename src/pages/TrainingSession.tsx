@@ -7,6 +7,7 @@ import {
   useTrainingSession,
   useUpdateTrainingSession,
   useEndTrainingSession,
+  useHavenVoice,
   callTrainingChat,
   callTrainingScore,
 } from '@/hooks/useTraining'
@@ -37,6 +38,7 @@ export default function TrainingSession() {
   const { data: session, isLoading: sessionLoading } = useTrainingSession(id)
   const updateSession = useUpdateTrainingSession()
   const endSession = useEndTrainingSession()
+  const { data: havenVoice } = useHavenVoice()
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
@@ -200,11 +202,20 @@ export default function TrainingSession() {
 
     for (let attempt = 0; attempt <= MAX_SCORE_RETRIES; attempt++) {
       try {
-        // 1. Score the session
+        // 1. Score the session — pass Haven Voice codex so judgments compare
+        //    against real Haven phrasing, not abstract adjectives.
         const scoreResult = await callTrainingScore({
           transcript: messages,
           scenario_brief: scenario.brief,
           haven_standard: scenario.haven_standard,
+          haven_voice: havenVoice
+            ? {
+                principles: havenVoice.principles ?? [],
+                signature_phrases: havenVoice.signature_phrases ?? [],
+                banned_phrases: havenVoice.banned_phrases ?? [],
+                exemplars: havenVoice.exemplars ?? [],
+              }
+            : undefined,
         })
 
         // 2. End session with scores

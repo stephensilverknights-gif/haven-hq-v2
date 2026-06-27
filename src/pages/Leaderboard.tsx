@@ -228,13 +228,16 @@ function PersonalStats({ history }: { history: HistorySession[] }) {
     ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
     : null
   const best = scores.length > 0 ? Math.max(...scores) : null
-  // Calculate weakest criteria
+  // Calculate weakest/strongest criteria using the new voice-first rubric.
+  // For sessions scored under the old rubric (no new columns), map to the
+  // closest analog so historical scores still contribute. Concrete Action
+  // is shared between rubrics.
   const criteriaAvgs = [
-    { name: 'Empathy', avg: calcAvg(history.map(h => h.score_empathy)) },
-    { name: 'Action', avg: calcAvg(history.map(h => h.score_action)) },
-    { name: 'Tone', avg: calcAvg(history.map(h => h.score_tone)) },
-    { name: 'Resolution', avg: calcAvg(history.map(h => h.score_resolution)) },
-    { name: 'No Policy Hiding', avg: calcAvg(history.map(h => h.score_no_policy)) },
+    { name: 'Warmth & Empathy', avg: calcAvg(history.map(h => h.score_warmth ?? h.score_empathy)) },
+    { name: 'Specificity', avg: calcAvg(history.map(h => h.score_specificity ?? h.score_no_policy)) },
+    { name: 'Ownership Voice', avg: calcAvg(history.map(h => h.score_ownership)) },
+    { name: 'Tone Calibration', avg: calcAvg(history.map(h => h.score_calibration ?? h.score_tone)) },
+    { name: 'Concrete Action', avg: calcAvg(history.map(h => h.score_action)) },
   ].filter(c => c.avg !== null)
 
   const weakest = criteriaAvgs.length > 0

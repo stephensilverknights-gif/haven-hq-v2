@@ -73,6 +73,12 @@ export async function callTrainingScore(params: {
   transcript: ChatMessage[]
   scenario_brief: string
   haven_standard: string
+  haven_voice?: {
+    principles: string[]
+    signature_phrases: string[]
+    banned_phrases: string[]
+    exemplars: string[]
+  }
 }): Promise<ScoreResult> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.access_token) throw new Error('Not authenticated')
@@ -381,7 +387,7 @@ export function useAllScenarios() {
   })
 }
 
-import type { HavenStandard, HostawayImport } from '@/lib/training-types'
+import type { HavenStandard, HavenVoice, HostawayImport } from '@/lib/training-types'
 
 async function fetchHavenStandards(): Promise<HavenStandard[]> {
   const { data, error } = await supabase
@@ -398,6 +404,55 @@ export function useHavenStandards() {
     queryKey: ['havenStandards'],
     queryFn: fetchHavenStandards,
     staleTime: 60_000,
+  })
+}
+
+// ── Haven Voice Codex (single row) ───────────────────────────────────────────
+
+async function fetchHavenVoice(): Promise<HavenVoice | null> {
+  const { data, error } = await supabase
+    .from('haven_voice')
+    .select('*')
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw error
+  return data as HavenVoice | null
+}
+
+export function useHavenVoice() {
+  return useQuery({
+    queryKey: ['havenVoice'],
+    queryFn: fetchHavenVoice,
+    staleTime: 60_000,
+  })
+}
+
+export function useUpdateHavenVoice() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: {
+      id: string
+      principles?: string[]
+      signature_phrases?: string[]
+      banned_phrases?: string[]
+      exemplars?: string[]
+    }) => {
+      const { id, ...fields } = input
+      const { data, error } = await supabase
+        .from('haven_voice')
+        .update({ ...fields, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select('*')
+        .single()
+
+      if (error) throw error
+      return data as HavenVoice
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['havenVoice'] })
+    },
   })
 }
 
@@ -518,8 +573,14 @@ export interface HistorySession {
   grade: string | null
   exchange_count: number
   completed_at: string
-  score_empathy: number | null
+  // New voice-first rubric
+  score_warmth: number | null
+  score_specificity: number | null
+  score_ownership: number | null
+  score_calibration: number | null
   score_action: number | null
+  // Legacy rubric (kept for pre-migration sessions)
+  score_empathy: number | null
   score_tone: number | null
   score_resolution: number | null
   score_no_policy: number | null
@@ -528,7 +589,7 @@ export interface HistorySession {
 async function fetchTraineeHistory(userId: string): Promise<HistorySession[]> {
   const { data, error } = await supabase
     .from('training_sessions')
-    .select('id, score_overall, grade, exchange_count, completed_at, score_empathy, score_action, score_tone, score_resolution, score_no_policy, scenario:scenarios(title, difficulty)')
+    .select('id, score_overall, grade, exchange_count, completed_at, score_warmth, score_specificity, score_ownership, score_calibration, score_action, score_empathy, score_tone, score_resolution, score_no_policy, scenario:scenarios(title, difficulty)')
     .eq('trainee_id', userId)
     .not('completed_at', 'is', null)
     .not('score_overall', 'is', null)
@@ -545,8 +606,12 @@ async function fetchTraineeHistory(userId: string): Promise<HistorySession[]> {
     grade: row.grade,
     exchange_count: row.exchange_count ?? 0,
     completed_at: row.completed_at,
-    score_empathy: row.score_empathy,
+    score_warmth: row.score_warmth,
+    score_specificity: row.score_specificity,
+    score_ownership: row.score_ownership,
+    score_calibration: row.score_calibration,
     score_action: row.score_action,
+    score_empathy: row.score_empathy,
     score_tone: row.score_tone,
     score_resolution: row.score_resolution,
     score_no_policy: row.score_no_policy,
@@ -718,15 +783,15 @@ export function useEndTrainingSession() {
 
   return useMutation({
     mutationFn: async (input: EndSessionInput) => {
-      // 1. Mark session complete with scores
+      // 1. Mark session complete with scores (new voice-first rubric)
       const scoreFields = input.score
         ? {
             score_overall: input.score.overall,
-            score_empathy: input.score.criteria.find((c) => c.key === 'empathy_first')?.score ?? null,
+            score_warmth: input.score.criteria.find((c) => c.key === 'warmth_empathy')?.score ?? null,
+            score_specificity: input.score.criteria.find((c) => c.key === 'specificity')?.score ?? null,
+            score_ownership: input.score.criteria.find((c) => c.key === 'ownership_voice')?.score ?? null,
+            score_calibration: input.score.criteria.find((c) => c.key === 'tone_calibration')?.score ?? null,
             score_action: input.score.criteria.find((c) => c.key === 'concrete_action')?.score ?? null,
-            score_tone: input.score.criteria.find((c) => c.key === 'haven_tone')?.score ?? null,
-            score_resolution: input.score.criteria.find((c) => c.key === 'appropriate_resolution')?.score ?? null,
-            score_no_policy: input.score.criteria.find((c) => c.key === 'no_policy_hiding')?.score ?? null,
             grade: input.score.grade,
             feedback: input.score.feedback,
             coaching: input.score.coaching,

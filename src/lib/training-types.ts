@@ -59,8 +59,15 @@ export interface TrainingSession {
   exchange_count: number
   transcript: ChatMessage[]
   score_overall: number | null
-  score_empathy: number | null
+  // ── New voice-first rubric (post-migration 009) ────────────────────────
+  score_warmth: number | null
+  score_specificity: number | null
+  score_ownership: number | null
+  score_calibration: number | null
+  // score_action is shared between rubrics — Concrete Action survived unchanged
   score_action: number | null
+  // ── Legacy rubric (pre-migration 009) — kept for historical sessions ───
+  score_empathy: number | null
   score_tone: number | null
   score_resolution: number | null
   score_no_policy: number | null
@@ -71,6 +78,45 @@ export interface TrainingSession {
   flag_reason: string | null
   // Joined
   scenario?: Scenario
+}
+
+// ── Haven Voice Codex ────────────────────────────────────────────────────────
+
+export interface HavenVoice {
+  id: string
+  principles: string[]
+  signature_phrases: string[]
+  banned_phrases: string[]
+  exemplars: string[]
+  updated_by: string | null
+  updated_at: string
+}
+
+// ── Rubric Criteria ──────────────────────────────────────────────────────────
+
+export type RubricCriterionKey =
+  // New voice-first rubric
+  | 'warmth_empathy'
+  | 'specificity'
+  | 'ownership_voice'
+  | 'tone_calibration'
+  | 'concrete_action'
+  // Legacy rubric (pre-migration 009)
+  | 'empathy_first'
+  | 'haven_tone'
+  | 'appropriate_resolution'
+  | 'no_policy_hiding'
+
+export const CRITERION_LABELS: Record<RubricCriterionKey, string> = {
+  warmth_empathy: 'Warmth & Empathy',
+  specificity: 'Specificity',
+  ownership_voice: 'Ownership Voice',
+  tone_calibration: 'Tone Calibration',
+  concrete_action: 'Concrete Action',
+  empathy_first: 'Empathy First',
+  haven_tone: 'Haven Tone',
+  appropriate_resolution: 'Appropriate Resolution',
+  no_policy_hiding: 'No Policy Hiding',
 }
 
 export interface DailySummary {

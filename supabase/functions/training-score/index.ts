@@ -1,8 +1,15 @@
 // Supabase Edge Function: training-score
-// Scores a completed training session using Anthropic API.
+// Scores a completed training session against Haven's voice-first rubric.
+//
+// 4 of 5 criteria evaluate language; only Concrete Action evaluates outcome.
+// The Haven Voice Codex (principles, signature phrases, banned phrases,
+// exemplars) is injected into the scorer prompt as ground truth, so
+// judgments compare trainee phrasing against real Haven phrasing instead of
+// abstract adjectives.
 //
 // Deploy:
 //   supabase functions deploy training-score
+//   (legacy JWT verify must stay OFF — auth handled internally)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -15,6 +22,13 @@ interface ChatMessage {
   role: 'guest' | 'trainee'
   content: string
   timestamp?: string
+}
+
+interface HavenVoicePayload {
+  principles?: string[]
+  signature_phrases?: string[]
+  banned_phrases?: string[]
+  exemplars?: string[]
 }
 
 interface ScoreResult {
@@ -30,13 +44,17 @@ interface ScoreResult {
   coaching: string
 }
 
+function formatList(items: string[] | undefined, fallback: string): string {
+  if (!items || items.length === 0) return fallback
+  return items.map((s) => `- ${s}`).join('\n')
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Verify auth
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
@@ -67,11 +85,11 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // Parse request
-    const { transcript, scenario_brief, haven_standard } = await req.json() as {
+    const { transcript, scenario_brief, haven_standard, haven_voice } = await req.json() as {
       transcript: ChatMessage[]
       scenario_brief: string
       haven_standard: string
+      haven_voice?: HavenVoicePayload
     }
 
     if (!transcript || !scenario_brief || !haven_standard) {
@@ -81,39 +99,92 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // Extract only trainee messages for scoring
     const traineeMessages = transcript
       .filter((m) => m.role === 'trainee')
       .map((m) => m.content)
       .join('\n\n')
 
-    // Full transcript for context
     const fullTranscript = transcript
       .map((m) => `${m.role === 'guest' ? 'GUEST' : 'TRAINEE'}: ${m.content}`)
       .join('\n\n')
 
+    const principlesBlock = formatList(
+      haven_voice?.principles,
+      '- Lead with the human, not the policy.\n- Use specific timeframes, never vague reassurance.\n- Speak in first person — "I\'m on it", not "the team will look into it".\n- Match the moment: warm, never saccharine; serious, never stiff.'
+    )
+    const signatureBlock = formatList(
+      haven_voice?.signature_phrases,
+      '(none provided — judge by principles)'
+    )
+    const bannedBlock = formatList(
+      haven_voice?.banned_phrases,
+      '(none provided — flag corporate phrasing by ear)'
+    )
+    const exemplarsBlock = formatList(
+      haven_voice?.exemplars,
+      '(none provided)'
+    )
+
     const scorerPrompt = `You are a quality evaluator for Haven by Design Stays, a premium short-term rental company.
 
-SCENARIO: ${scenario_brief}
+The team is being trained to speak in Haven's voice. This rubric weights LANGUAGE over OUTCOME — 4 of 5 criteria evaluate how the trainee speaks, not whether they "solved" anything. Resolution skill is trained separately.
 
-HAVEN'S STANDARD FOR THIS ISSUE:
+═══════════════════════════════════════════
+HAVEN VOICE CODEX (ground truth)
+═══════════════════════════════════════════
+
+VOICE PRINCIPLES:
+${principlesBlock}
+
+SIGNATURE PHRASES (how Haven actually talks):
+${signatureBlock}
+
+BANNED / CORPORATE PHRASES (always penalize):
+${bannedBlock}
+
+EXEMPLAR LINES from real Haven conversations:
+${exemplarsBlock}
+
+═══════════════════════════════════════════
+SCENARIO
+═══════════════════════════════════════════
+
+${scenario_brief}
+
+OPERATIONAL STANDARD (for action criterion only — do NOT use as voice reference):
 ${haven_standard}
 
-FULL CONVERSATION:
+═══════════════════════════════════════════
+CONVERSATION
+═══════════════════════════════════════════
+
 ${fullTranscript}
 
-TRAINEE RESPONSES ONLY (what you are scoring):
+TRAINEE RESPONSES ONLY (this is what you score):
 ${traineeMessages}
 
-Score on exactly these 5 criteria (0-20 each, 100 total):
+═══════════════════════════════════════════
+RUBRIC — score each criterion 0-20 (100 total)
+═══════════════════════════════════════════
 
-1. EMPATHY FIRST — Acknowledged emotional state before solutions? Made the guest feel heard?
-2. CONCRETE ACTION — Specific next step with a timeframe? Not "we'll look into it."
-3. HAVEN TONE — Warm, human, non-corporate. Person who cares, not a policy bot.
-4. APPROPRIATE RESOLUTION — Compensation/fix calibrated correctly? Not too little, not giving away the farm.
-5. NO POLICY HIDING — Avoided using policy as a shield without offering alternatives?
+1. WARMTH & EMPATHY (0-20) — LANGUAGE
+   Did they acknowledge the human before the ticket? Land the emotion before the logistics? Make the guest feel heard, not processed?
+   - Compare against signature phrases for openings/acknowledgments.
 
-Grading scale:
+2. SPECIFICITY (0-20) — LANGUAGE
+   Concrete language, no corporate hedging, no policy-shield phrasing. Real words for real things.
+   - HARD RULE: if the trainee uses ANY banned/corporate phrase, this score MUST be ≤ 8.
+
+3. OWNERSHIP VOICE (0-20) — LANGUAGE
+   First-person, accountable. "I'm on it" / "I'll have someone over in 30 minutes" — NOT "the team will look into this" / "we'll get back to you" / passive deflection.
+
+4. TONE CALIBRATION (0-20) — LANGUAGE
+   Does the tone match the moment? Not over-cheery when the guest is frustrated. Not stiff/formal with a relaxed guest. Reads the room.
+
+5. CONCRETE ACTION (0-20) — OUTCOME
+   Did they actually move it forward — a real next step with a real timeframe? Vague "we'll look into it" is NOT a concrete action.
+
+Grade by overall score:
 - 85-100: Excellent
 - 70-84: Good
 - 50-69: Needs Work
@@ -124,15 +195,17 @@ Return ONLY valid JSON, no markdown, no preamble:
   "overall": <0-100>,
   "grade": "<Excellent|Good|Needs Work|Failing>",
   "criteria": [
-    {"key": "empathy_first", "name": "Empathy first", "score": <0-20>, "pass": <bool>},
-    {"key": "concrete_action", "name": "Concrete action", "score": <0-20>, "pass": <bool>},
-    {"key": "haven_tone", "name": "Haven tone", "score": <0-20>, "pass": <bool>},
-    {"key": "appropriate_resolution", "name": "Appropriate resolution", "score": <0-20>, "pass": <bool>},
-    {"key": "no_policy_hiding", "name": "No policy hiding", "score": <0-20>, "pass": <bool>}
+    {"key": "warmth_empathy", "name": "Warmth & Empathy", "score": <0-20>, "pass": <bool>},
+    {"key": "specificity", "name": "Specificity", "score": <0-20>, "pass": <bool>},
+    {"key": "ownership_voice", "name": "Ownership Voice", "score": <0-20>, "pass": <bool>},
+    {"key": "tone_calibration", "name": "Tone Calibration", "score": <0-20>, "pass": <bool>},
+    {"key": "concrete_action", "name": "Concrete Action", "score": <0-20>, "pass": <bool>}
   ],
-  "feedback": "<2-3 sentences direct specific actionable feedback>",
-  "coaching": "<1-2 sentences on what Haven specifically expects here>"
-}`
+  "feedback": "<2-3 sentences direct, specific, actionable. Quote the trainee's phrasing where useful. Focus on voice.>",
+  "coaching": "<1-2 sentences on what Haven specifically expects here — language, not just resolution.>"
+}
+
+A criterion passes when score >= 12 (60%).`
 
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -142,8 +215,8 @@ Return ONLY valid JSON, no markdown, no preamble:
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1200,
         temperature: 0.3,
         messages: [{ role: 'user', content: scorerPrompt }],
       }),
@@ -164,7 +237,6 @@ Return ONLY valid JSON, no markdown, no preamble:
     const anthropicData = await anthropicResponse.json()
     const rawText = anthropicData.content?.[0]?.text ?? ''
 
-    // Parse the JSON response — handle potential markdown wrapping
     let scoreResult: ScoreResult
     try {
       const jsonStr = rawText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()

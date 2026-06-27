@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -8,6 +8,8 @@ import {
   EyeOff,
   BookOpen,
   Save,
+  Mic,
+  X as XIcon,
 } from 'lucide-react'
 import TopNav from '@/components/TopNav'
 import { useAuth } from '@/contexts/AuthContext'
@@ -17,6 +19,8 @@ import {
   useUpdateScenario,
   useHavenStandards,
   useUpdateHavenStandard,
+  useHavenVoice,
+  useUpdateHavenVoice,
 } from '@/hooks/useTraining'
 import type { ScenarioInput } from '@/hooks/useTraining'
 import {
@@ -27,7 +31,7 @@ import {
 import type { Difficulty, TrainingIssueType, Scenario } from '@/lib/training-types'
 import { cn } from '@/lib/utils'
 
-type Tab = 'scenarios' | 'standards'
+type Tab = 'scenarios' | 'standards' | 'voice'
 type DifficultyFilter = 'all' | Difficulty
 type StatusFilter = 'all' | 'active' | 'inactive' | 'pending'
 
@@ -402,6 +406,217 @@ function StandardsEditor() {
   )
 }
 
+// ── Voice Codex Tab ──────────────────────────────────────────────────────────
+
+type VoiceListKey = 'principles' | 'signature_phrases' | 'banned_phrases' | 'exemplars'
+
+const VOICE_LIST_META: { key: VoiceListKey; label: string; placeholder: string; helper: string }[] = [
+  {
+    key: 'principles',
+    label: 'Voice Principles',
+    placeholder: 'e.g., Lead with the human, not the policy.',
+    helper: 'Short rules that capture how Haven speaks. Fed to the scorer as ground truth.',
+  },
+  {
+    key: 'signature_phrases',
+    label: 'Signature Phrases',
+    placeholder: 'e.g., "I\'m on it — give me 20 minutes."',
+    helper: 'Real openings, ownership lines, and closings drawn from Haven conversations.',
+  },
+  {
+    key: 'banned_phrases',
+    label: 'Banned / Corporate Phrases',
+    placeholder: 'e.g., "Per our policy"',
+    helper: 'Any use of these caps the trainee\'s Specificity score at 8/20.',
+  },
+  {
+    key: 'exemplars',
+    label: 'Exemplar Lines',
+    placeholder: 'Paste a full line from a real conversation that nails Haven\'s voice.',
+    helper: 'High-quality reference lines. The scorer compares trainee phrasing against these.',
+  },
+]
+
+function VoiceListEditor({
+  label,
+  helper,
+  placeholder,
+  items,
+  onChange,
+}: {
+  label: string
+  helper: string
+  placeholder: string
+  items: string[]
+  onChange: (next: string[]) => void
+}) {
+  return (
+    <div className="bg-card-bg rounded-[10px] neon-border p-4">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-medium text-haven-indigo uppercase tracking-wider">
+          {label}
+        </span>
+        <span className="text-[10px] text-text-muted">{items.length}</span>
+      </div>
+      <p className="text-xs text-text-muted mb-3">{helper}</p>
+
+      <div className="flex flex-col gap-2">
+        {items.map((item, i) => (
+          <div key={i} className="flex items-start gap-2">
+            <textarea
+              value={item}
+              onChange={(e) => {
+                const next = [...items]
+                next[i] = e.target.value
+                onChange(next)
+              }}
+              placeholder={placeholder}
+              rows={2}
+              className="flex-1 bg-surface border border-border rounded-[8px] px-3 py-2 text-sm text-text-primary placeholder:text-text-muted resize-none focus:outline-none focus:ring-1 focus:ring-haven-indigo/50"
+            />
+            <button
+              onClick={() => onChange(items.filter((_, j) => j !== i))}
+              title="Remove"
+              className="flex items-center justify-center w-8 h-8 rounded-[8px] text-text-muted hover:text-fire-text hover:bg-fire-bg/50 transition-colors cursor-pointer shrink-0"
+            >
+              <XIcon size={14} strokeWidth={1.5} />
+            </button>
+          </div>
+        ))}
+
+        <button
+          onClick={() => onChange([...items, ''])}
+          className="flex items-center justify-center gap-1.5 text-xs text-text-muted hover:text-haven-indigo border border-dashed border-border hover:border-haven-indigo/40 rounded-[8px] py-2 transition-colors cursor-pointer"
+        >
+          <Plus size={12} strokeWidth={1.5} />
+          Add {label.toLowerCase()}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function VoiceEditor() {
+  const { data: voice, isLoading } = useHavenVoice()
+  const updateVoice = useUpdateHavenVoice()
+
+  const [lists, setLists] = useState<Record<VoiceListKey, string[]>>({
+    principles: [],
+    signature_phrases: [],
+    banned_phrases: [],
+    exemplars: [],
+  })
+
+  // Hydrate local state from query
+  useEffect(() => {
+    if (!voice) return
+    setLists({
+      principles: voice.principles ?? [],
+      signature_phrases: voice.signature_phrases ?? [],
+      banned_phrases: voice.banned_phrases ?? [],
+      exemplars: voice.exemplars ?? [],
+    })
+  }, [voice])
+
+  const dirty = useMemo(() => {
+    if (!voice) return false
+    const same = (a: string[], b: string[]) =>
+      a.length === b.length && a.every((v, i) => v === b[i])
+    return !(
+      same(lists.principles, voice.principles ?? []) &&
+      same(lists.signature_phrases, voice.signature_phrases ?? []) &&
+      same(lists.banned_phrases, voice.banned_phrases ?? []) &&
+      same(lists.exemplars, voice.exemplars ?? [])
+    )
+  }, [voice, lists])
+
+  if (isLoading) {
+    return <div className="text-sm text-text-secondary py-8 text-center">Loading voice codex...</div>
+  }
+
+  if (!voice) {
+    return (
+      <div className="text-sm text-text-muted py-8 text-center">
+        No voice codex row found. Run migration 009 in Supabase to seed it.
+      </div>
+    )
+  }
+
+  const handleSave = async () => {
+    // Trim empties before persisting
+    const clean = (arr: string[]) => arr.map((s) => s.trim()).filter(Boolean)
+    await updateVoice.mutateAsync({
+      id: voice.id,
+      principles: clean(lists.principles),
+      signature_phrases: clean(lists.signature_phrases),
+      banned_phrases: clean(lists.banned_phrases),
+      exemplars: clean(lists.exemplars),
+    })
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="bg-surface rounded-[10px] neon-border p-4">
+        <p className="text-sm text-text-primary leading-relaxed">
+          The Voice Codex is fed into the scorer as ground truth. It teaches the
+          training scorer what Haven actually sounds like — so judgments compare
+          against real Haven phrasing instead of abstract adjectives.
+        </p>
+        <p className="text-xs text-text-muted mt-2">
+          Source from real Hostaway conversations (October 2025 – February 2026) and the team's Loom voice walkthroughs.
+        </p>
+      </div>
+
+      {VOICE_LIST_META.map((meta) => (
+        <VoiceListEditor
+          key={meta.key}
+          label={meta.label}
+          helper={meta.helper}
+          placeholder={meta.placeholder}
+          items={lists[meta.key]}
+          onChange={(next) => setLists((prev) => ({ ...prev, [meta.key]: next }))}
+        />
+      ))}
+
+      <div className="sticky bottom-3 z-10 flex items-center justify-end gap-3">
+        <button
+          onClick={() => {
+            if (!voice) return
+            setLists({
+              principles: voice.principles ?? [],
+              signature_phrases: voice.signature_phrases ?? [],
+              banned_phrases: voice.banned_phrases ?? [],
+              exemplars: voice.exemplars ?? [],
+            })
+          }}
+          disabled={!dirty || updateVoice.isPending}
+          className={cn(
+            'text-sm transition-colors cursor-pointer',
+            dirty && !updateVoice.isPending
+              ? 'text-text-muted hover:text-text-primary'
+              : 'text-text-muted/40 cursor-not-allowed'
+          )}
+        >
+          Revert
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={!dirty || updateVoice.isPending}
+          className={cn(
+            'flex items-center gap-1.5 px-4 py-2 rounded-[8px] text-sm font-medium transition-all duration-200 cursor-pointer',
+            dirty && !updateVoice.isPending
+              ? 'text-white bg-haven-indigo/20 border border-haven-indigo/60 hover:bg-haven-indigo/30'
+              : 'text-text-muted bg-surface border border-border cursor-not-allowed'
+          )}
+        >
+          <Save size={14} strokeWidth={1.5} />
+          {updateVoice.isPending ? 'Saving...' : 'Save voice codex'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ScenarioManager() {
@@ -515,7 +730,7 @@ export default function ScenarioManager() {
             transition={{ duration: 0.2, delay: 0.03, ease: [0.16, 1, 0.3, 1] }}
             className="flex items-center gap-1 p-1 bg-surface rounded-[10px] neon-border mb-5"
           >
-            {(['scenarios', 'standards'] as Tab[]).map((tab) => (
+            {(['scenarios', 'standards', 'voice'] as Tab[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -542,10 +757,17 @@ export default function ScenarioManager() {
                   />
                 )}
                 <span className="relative z-10 flex items-center justify-center gap-1.5">
-                  {tab === 'scenarios' ? 'Scenarios' : (
+                  {tab === 'scenarios' && 'Scenarios'}
+                  {tab === 'standards' && (
                     <>
                       <BookOpen size={14} strokeWidth={1.5} />
-                      Haven Standards
+                      Standards
+                    </>
+                  )}
+                  {tab === 'voice' && (
+                    <>
+                      <Mic size={14} strokeWidth={1.5} />
+                      Voice
                     </>
                   )}
                 </span>
@@ -554,7 +776,17 @@ export default function ScenarioManager() {
           </motion.div>
 
           <AnimatePresence mode="wait">
-            {activeTab === 'scenarios' ? (
+            {activeTab === 'voice' ? (
+              <motion.div
+                key="voice"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <VoiceEditor />
+              </motion.div>
+            ) : activeTab === 'scenarios' ? (
               <motion.div
                 key="scenarios"
                 initial={{ opacity: 0, x: -10 }}

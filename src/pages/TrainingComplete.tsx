@@ -47,14 +47,31 @@ export default function TrainingComplete() {
   const gradeColors = GRADE_COLORS[grade] ?? GRADE_COLORS['Needs Work']
   const overall = session.score_overall ?? 0
 
-  // Parse criteria from individual score columns
-  const criteria = [
-    { key: 'empathy_first', name: 'Empathy First', score: session.score_empathy ?? 0, pass: (session.score_empathy ?? 0) >= 12 },
-    { key: 'concrete_action', name: 'Concrete Action', score: session.score_action ?? 0, pass: (session.score_action ?? 0) >= 12 },
-    { key: 'haven_tone', name: 'Haven Tone', score: session.score_tone ?? 0, pass: (session.score_tone ?? 0) >= 12 },
-    { key: 'appropriate_resolution', name: 'Appropriate Resolution', score: session.score_resolution ?? 0, pass: (session.score_resolution ?? 0) >= 12 },
-    { key: 'no_policy_hiding', name: 'No Policy Hiding', score: session.score_no_policy ?? 0, pass: (session.score_no_policy ?? 0) >= 12 },
-  ]
+  // Detect rubric version. New voice-first rubric (post-migration 009) writes
+  // score_warmth / score_specificity / score_ownership / score_calibration.
+  // Old sessions only have the legacy columns. Show whichever applies so
+  // historical debriefs still render coherently.
+  const isNewRubric =
+    session.score_warmth != null ||
+    session.score_specificity != null ||
+    session.score_ownership != null ||
+    session.score_calibration != null
+
+  const criteria = isNewRubric
+    ? [
+        { key: 'warmth_empathy', name: 'Warmth & Empathy', score: session.score_warmth ?? 0, pass: (session.score_warmth ?? 0) >= 12 },
+        { key: 'specificity', name: 'Specificity', score: session.score_specificity ?? 0, pass: (session.score_specificity ?? 0) >= 12 },
+        { key: 'ownership_voice', name: 'Ownership Voice', score: session.score_ownership ?? 0, pass: (session.score_ownership ?? 0) >= 12 },
+        { key: 'tone_calibration', name: 'Tone Calibration', score: session.score_calibration ?? 0, pass: (session.score_calibration ?? 0) >= 12 },
+        { key: 'concrete_action', name: 'Concrete Action', score: session.score_action ?? 0, pass: (session.score_action ?? 0) >= 12 },
+      ]
+    : [
+        { key: 'empathy_first', name: 'Empathy First', score: session.score_empathy ?? 0, pass: (session.score_empathy ?? 0) >= 12 },
+        { key: 'concrete_action', name: 'Concrete Action', score: session.score_action ?? 0, pass: (session.score_action ?? 0) >= 12 },
+        { key: 'haven_tone', name: 'Haven Tone', score: session.score_tone ?? 0, pass: (session.score_tone ?? 0) >= 12 },
+        { key: 'appropriate_resolution', name: 'Appropriate Resolution', score: session.score_resolution ?? 0, pass: (session.score_resolution ?? 0) >= 12 },
+        { key: 'no_policy_hiding', name: 'No Policy Hiding', score: session.score_no_policy ?? 0, pass: (session.score_no_policy ?? 0) >= 12 },
+      ]
 
   const transcript = (session.transcript ?? []) as { role: string; content: string }[]
 

@@ -283,13 +283,15 @@ function TraineeDetail({ userId, profileName }: { userId: string; profileName: s
     )
   }
 
-  // Calculate criteria averages
+  // Criteria averages using the new voice-first rubric. For sessions scored
+  // under the old rubric, fall back to the closest analog column so historical
+  // data still contributes. Concrete Action is shared between rubrics.
   const criteriaAvgs = [
-    { name: 'Empathy', key: 'score_empathy', values: sessions.map((s) => s.score_empathy) },
-    { name: 'Action', key: 'score_action', values: sessions.map((s) => s.score_action) },
-    { name: 'Tone', key: 'score_tone', values: sessions.map((s) => s.score_tone) },
-    { name: 'Resolution', key: 'score_resolution', values: sessions.map((s) => s.score_resolution) },
-    { name: 'No Policy Hiding', key: 'score_no_policy', values: sessions.map((s) => s.score_no_policy) },
+    { name: 'Warmth & Empathy', key: 'warmth', values: sessions.map((s) => s.score_warmth ?? s.score_empathy) },
+    { name: 'Specificity', key: 'specificity', values: sessions.map((s) => s.score_specificity ?? s.score_no_policy) },
+    { name: 'Ownership Voice', key: 'ownership', values: sessions.map((s) => s.score_ownership) },
+    { name: 'Tone Calibration', key: 'calibration', values: sessions.map((s) => s.score_calibration ?? s.score_tone) },
+    { name: 'Concrete Action', key: 'action', values: sessions.map((s) => s.score_action) },
   ].map((c) => {
     const nums = c.values.filter((v): v is number => v != null)
     const avg = nums.length > 0 ? Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10 : null
