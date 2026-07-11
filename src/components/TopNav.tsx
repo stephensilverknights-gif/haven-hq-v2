@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useMatch } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, LogOut, Flame, DollarSign, Menu, Settings, GraduationCap, Trophy, ShieldCheck } from 'lucide-react'
+import { Plus, LogOut, Flame, DollarSign, Menu, Settings, GraduationCap, Trophy, ShieldCheck, Moon } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   Sheet,
@@ -19,6 +19,7 @@ interface TopNavProps {
 const baseNavItems = [
   { to: '/', label: 'Hot Sheet', icon: Flame, end: true },
   { to: '/costs', label: 'Costs', icon: DollarSign, end: false },
+  { to: '/gap-nights', label: 'Gap Nights', icon: Moon, end: false },
   { to: '/training', label: 'Training', icon: GraduationCap, end: true },
   { to: '/leaderboard', label: 'Board', icon: Trophy, end: false },
 ]

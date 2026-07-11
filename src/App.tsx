@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import Login from '@/pages/Login'
 import HotSheet from '@/pages/HotSheet'
 import CostsView from '@/pages/CostsView'
+import GapNights from '@/pages/GapNights'
 import Settings from '@/pages/Settings'
 import Training from '@/pages/Training'
 import TrainingSession from '@/pages/TrainingSession'
@@ -75,6 +76,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CostsView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gap-nights"
+        element={
+          <ProtectedRoute>
+            <GapNights />
           </ProtectedRoute>
         }
       />
