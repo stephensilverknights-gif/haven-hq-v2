@@ -181,6 +181,10 @@ export default function Restock() {
               <SectionTitle color="#F87171" glow="rgba(248,113,113,0.35)">
                 Order now ({groups.orderNow.length})
               </SectionTitle>
+              <p className="text-xs text-text-muted px-4 pb-1 -mt-0.5">
+                Every line here needs an order placed today. "Order again" rows
+                already had one — it never made it to the room, so re-order it.
+              </p>
               {groups.orderNow.length === 0 ? (
                 <p className="text-text-muted text-center py-8">Nothing needs ordering.</p>
               ) : (
@@ -208,8 +212,8 @@ export default function Restock() {
                         </TableCell>
                         <TableCell className="text-xs text-text-muted hidden sm:table-cell max-w-[340px]">
                           {r.state === 'RE_OPENED'
-                            ? `Re-flagged after restock window (${fmtDay(r.room_by)}) — last order didn't stick`
-                            : r.note || '—'}
+                            ? `Order again — ordered ${fmtDay(r.last_order)} but cleaners still flag it low. Didn't reach the room or wasn't enough.`
+                            : 'Order it — nothing has been ordered for this flag.'}
                         </TableCell>
                       </TableRow>
                     ))}
