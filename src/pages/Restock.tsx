@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { AlertTriangle, Package, Truck, TrendingDown } from 'lucide-react'
 import TopNav from '@/components/TopNav'
+import AmazonExportUpload from '@/components/AmazonExportUpload'
 import {
   Table,
   TableBody,
@@ -122,6 +123,9 @@ export default function Restock() {
             <span className="text-[#FBBF24]"> — stale, daily run may have missed</span>
           )}
         </p>
+
+        {/* VA daily upload */}
+        <AmazonExportUpload />
 
         {/* Summary tiles */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-5">
