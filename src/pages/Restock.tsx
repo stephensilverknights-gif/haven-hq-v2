@@ -210,7 +210,7 @@ export default function Restock() {
                             <span className="text-xs text-text-muted"> ({r.days_since_flag}d)</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-xs text-text-muted hidden sm:table-cell max-w-[340px]">
+                        <TableCell className="text-xs text-text-muted hidden sm:table-cell max-w-[340px] whitespace-normal">
                           <div>
                             {r.state === 'RE_OPENED'
                               ? `Order again — ordered ${fmtDay(r.last_order)} but cleaners still flag it low. Didn't reach the room or wasn't enough.`
