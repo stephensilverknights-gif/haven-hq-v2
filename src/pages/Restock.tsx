@@ -211,9 +211,19 @@ export default function Restock() {
                           )}
                         </TableCell>
                         <TableCell className="text-xs text-text-muted hidden sm:table-cell max-w-[340px]">
-                          {r.state === 'RE_OPENED'
-                            ? `Order again — ordered ${fmtDay(r.last_order)} but cleaners still flag it low. Didn't reach the room or wasn't enough.`
-                            : 'Order it — nothing has been ordered for this flag.'}
+                          <div>
+                            {r.state === 'RE_OPENED'
+                              ? `Order again — ordered ${fmtDay(r.last_order)} but cleaners still flag it low. Didn't reach the room or wasn't enough.`
+                              : 'Order it — nothing has been ordered for this flag.'}
+                          </div>
+                          {/* exact PO string: attribution needs the unit named
+                              on the order, or this row comes back tomorrow */}
+                          <code
+                            className="inline-block mt-1 px-1.5 py-0.5 rounded text-[11px]"
+                            style={{ background: 'rgba(123,124,248,0.10)', color: '#9596FF', border: '1px solid rgba(123,124,248,0.25)' }}
+                          >
+                            PO: SUPPLY-Restock ({r.unit})
+                          </code>
                         </TableCell>
                       </TableRow>
                     ))}
