@@ -4,6 +4,7 @@ import Login from '@/pages/Login'
 import HotSheet from '@/pages/HotSheet'
 import CostsView from '@/pages/CostsView'
 import GapNights from '@/pages/GapNights'
+import Restock from '@/pages/Restock'
 import Settings from '@/pages/Settings'
 import Training from '@/pages/Training'
 import TrainingSession from '@/pages/TrainingSession'
@@ -84,6 +85,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <GapNights />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/restock"
+        element={
+          <ProtectedRoute>
+            <Restock />
           </ProtectedRoute>
         }
       />
