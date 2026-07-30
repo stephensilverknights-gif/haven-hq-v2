@@ -69,6 +69,45 @@ function SectionTitle({ color, glow, children }: { color: string; glow: string; 
   )
 }
 
+// A clearly-tappable pill button. Tinted with a raised inset edge at rest;
+// on hover it fills solid, inverts the text, glows, and lifts — so it reads
+// unmistakably as a button, not a label. Colours are 8-digit hex (RRGGBBAA).
+function PillButton({
+  label,
+  color,
+  onClick,
+  disabled,
+}: {
+  label: string
+  color: string
+  onClick: () => void
+  disabled?: boolean
+}) {
+  const [hover, setHover] = useState(false)
+  const active = hover && !disabled
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="text-xs font-semibold px-2.5 py-1 rounded-[6px] cursor-pointer transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+      style={{
+        background: active ? color : `${color}1f`,
+        color: active ? '#0B0B14' : color,
+        border: `1px solid ${active ? color : `${color}59`}`,
+        boxShadow: active
+          ? `0 2px 10px ${color}66`
+          : `inset 0 1px 0 ${color}33, 0 1px 1px rgba(0,0,0,0.3)`,
+        transform: active ? 'translateY(-1px)' : 'none',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
 // Two-step manual override on an Order-now row. "Ordered" records that a VA
 // placed it (engine moves it to In-transit next run); "Delivered" records it's
 // in the room (engine resolves it). Either way it drops off Order-now
@@ -78,47 +117,30 @@ function DismissCell({ row }: { row: RestockState }) {
   const [confirm, setConfirm] = useState<DismissAction | null>(null)
   const pending = dismiss.isPending
 
-  const pill = (label: string, onClick: () => void, style: React.CSSProperties) => (
-    <button
-      type="button"
-      disabled={pending}
-      onClick={onClick}
-      className="text-xs font-medium px-2 py-0.5 rounded-[6px] disabled:opacity-50 transition-opacity"
-      style={style}
-    >
-      {label}
-    </button>
-  )
-
   if (confirm) {
     return (
       <div className="flex items-center gap-1.5 whitespace-nowrap">
         <span className="text-xs text-text-muted capitalize">{confirm}?</span>
-        {pill(
-          pending ? '…' : 'Yes',
-          () =>
+        <PillButton
+          label={pending ? '…' : 'Yes'}
+          color="#34D399"
+          disabled={pending}
+          onClick={() =>
             dismiss.mutate(
               { unit: row.unit, item: row.item, action: confirm },
               { onSettled: () => setConfirm(null) }
-            ),
-          { background: 'rgba(52,211,153,0.15)', color: '#34D399', border: '1px solid rgba(52,211,153,0.4)' }
-        )}
-        {pill('No', () => setConfirm(null), {
-          color: '#9CA3AF',
-          border: '1px solid rgba(255,255,255,0.12)',
-        })}
+            )
+          }
+        />
+        <PillButton label="No" color="#9CA3AF" disabled={pending} onClick={() => setConfirm(null)} />
       </div>
     )
   }
 
   return (
     <div className="flex items-center gap-1.5 whitespace-nowrap">
-      {pill('Ordered', () => setConfirm('ordered'), {
-        background: 'rgba(96,165,250,0.12)', color: '#60A5FA', border: '1px solid rgba(96,165,250,0.35)',
-      })}
-      {pill('Delivered', () => setConfirm('delivered'), {
-        background: 'rgba(52,211,153,0.12)', color: '#34D399', border: '1px solid rgba(52,211,153,0.35)',
-      })}
+      <PillButton label="Ordered" color="#60A5FA" onClick={() => setConfirm('ordered')} />
+      <PillButton label="Delivered" color="#34D399" onClick={() => setConfirm('delivered')} />
     </div>
   )
 }
