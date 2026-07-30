@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { AlertTriangle, Package, Truck, TrendingDown } from 'lucide-react'
 import TopNav from '@/components/TopNav'
@@ -12,6 +12,12 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useRestockStates, type RestockState } from '@/hooks/useRestockStates'
+import {
+  useRestockDismissals,
+  useDismissRestock,
+  isRowDismissed,
+  type DismissAction,
+} from '@/hooks/useRestockDismissals'
 
 // Date-only strings ("2026-07-28") parsed as local midnight so they don't slip
 // a day in Pacific time (same convention as GapNights).
@@ -63,13 +69,73 @@ function SectionTitle({ color, glow, children }: { color: string; glow: string; 
   )
 }
 
+// Two-step manual override on an Order-now row. "Ordered" records that a VA
+// placed it (engine moves it to In-transit next run); "Delivered" records it's
+// in the room (engine resolves it). Either way it drops off Order-now
+// immediately here, and reappears only if a cleaner flags it low again later.
+function DismissCell({ row }: { row: RestockState }) {
+  const dismiss = useDismissRestock()
+  const [confirm, setConfirm] = useState<DismissAction | null>(null)
+  const pending = dismiss.isPending
+
+  const pill = (label: string, onClick: () => void, style: React.CSSProperties) => (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={onClick}
+      className="text-xs font-medium px-2 py-0.5 rounded-[6px] disabled:opacity-50 transition-opacity"
+      style={style}
+    >
+      {label}
+    </button>
+  )
+
+  if (confirm) {
+    return (
+      <div className="flex items-center gap-1.5 whitespace-nowrap">
+        <span className="text-xs text-text-muted capitalize">{confirm}?</span>
+        {pill(
+          pending ? '…' : 'Yes',
+          () =>
+            dismiss.mutate(
+              { unit: row.unit, item: row.item, action: confirm },
+              { onSettled: () => setConfirm(null) }
+            ),
+          { background: 'rgba(52,211,153,0.15)', color: '#34D399', border: '1px solid rgba(52,211,153,0.4)' }
+        )}
+        {pill('No', () => setConfirm(null), {
+          color: '#9CA3AF',
+          border: '1px solid rgba(255,255,255,0.12)',
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 whitespace-nowrap">
+      {pill('Ordered', () => setConfirm('ordered'), {
+        background: 'rgba(96,165,250,0.12)', color: '#60A5FA', border: '1px solid rgba(96,165,250,0.35)',
+      })}
+      {pill('Delivered', () => setConfirm('delivered'), {
+        background: 'rgba(52,211,153,0.12)', color: '#34D399', border: '1px solid rgba(52,211,153,0.35)',
+      })}
+    </div>
+  )
+}
+
 export default function Restock() {
   const { data: states, isLoading, isError, error } = useRestockStates()
+  const { data: dismissals } = useRestockDismissals()
 
   const groups = useMemo(() => {
     const rows = states ?? []
+    const dm = dismissals ?? []
     const orderNow = rows
-      .filter((r) => r.state === 'OPEN' || r.state === 'RE_OPENED')
+      .filter(
+        (r) =>
+          (r.state === 'OPEN' || r.state === 'RE_OPENED') &&
+          !isRowDismissed(r, dm)
+      )
       .sort((a, b) => {
         // RE_OPENED first, then empty before low, then oldest flag first
         if ((a.state === 'RE_OPENED') !== (b.state === 'RE_OPENED')) {
@@ -86,7 +152,7 @@ export default function Restock() {
     const predicted = rows.filter((r) => r.state === 'PREDICTED_LOW')
     const generatedAt = rows.length ? new Date(rows[0].generated_at) : null
     return { orderNow, inTransit, predicted, generatedAt }
-  }, [states])
+  }, [states, dismissals])
 
   const tiles = [
     { label: 'Order now', value: String(groups.orderNow.length), icon: AlertTriangle, color: '#F87171', glow: 'rgba(248,113,113,0.25)', border: 'rgba(248,113,113,0.3)' },
@@ -184,6 +250,8 @@ export default function Restock() {
               <p className="text-xs text-text-muted px-4 pb-1 -mt-0.5">
                 Every line here needs an order placed today. "Order again" rows
                 already had one — it never made it to the room, so re-order it.
+                Already handled it? Mark it <span style={{ color: '#60A5FA' }}>Ordered</span>{' '}
+                or <span style={{ color: '#34D399' }}>Delivered</span> to clear the row.
               </p>
               {groups.orderNow.length === 0 ? (
                 <p className="text-text-muted text-center py-8">Nothing needs ordering.</p>
@@ -196,6 +264,7 @@ export default function Restock() {
                       <TableHead className="text-xs">Flag</TableHead>
                       <TableHead className="text-xs whitespace-nowrap">Flagged</TableHead>
                       <TableHead className="text-xs hidden sm:table-cell">Why</TableHead>
+                      <TableHead className="text-xs whitespace-nowrap text-right">Verified?</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -224,6 +293,11 @@ export default function Restock() {
                           >
                             PO: SUPPLY-Restock ({r.unit})
                           </code>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end">
+                            <DismissCell row={r} />
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
