@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { format, formatDistanceToNow } from 'date-fns'
-import { AlertTriangle, Package, Truck, TrendingDown } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Package, RefreshCw, Truck, TrendingDown } from 'lucide-react'
 import TopNav from '@/components/TopNav'
 import AmazonExportUpload from '@/components/AmazonExportUpload'
+import { useRestockRefresh } from '@/hooks/useRestockRefresh'
 import {
   Table,
   TableBody,
@@ -29,6 +30,10 @@ function fmtDay(s: string | null): string {
 
 function itemLabel(item: string): string {
   return item.replace(/_/g, ' ')
+}
+
+function fmtElapsed(s: number): string {
+  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`
 }
 
 function SeverityPill({ severity }: { severity: RestockState['severity'] }) {
@@ -148,6 +153,8 @@ function DismissCell({ row }: { row: RestockState }) {
 export default function Restock() {
   const { data: states, isLoading, isError, error } = useRestockStates()
   const { data: dismissals } = useRestockDismissals()
+  const refresh = useRestockRefresh()
+  const busy = refresh.status === 'starting' || refresh.status === 'running'
 
   const groups = useMemo(() => {
     const rows = states ?? []
@@ -212,8 +219,42 @@ export default function Restock() {
           )}
         </p>
 
-        {/* VA daily upload */}
-        <AmazonExportUpload />
+        {/* On-demand refresh — runs the engine now (auto after an upload, or
+            manually). Status reflects the real snapshot, not a guess. */}
+        <div className="flex items-center gap-3 flex-wrap mb-4">
+          <button
+            onClick={() => void refresh.trigger()}
+            disabled={busy}
+            title="Run the engine now instead of waiting for the 7am / 1pm scheduled run"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-medium cursor-pointer transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:brightness-125"
+            style={{ background: 'rgba(123,124,248,0.12)', color: '#9596FF', border: '1px solid rgba(123,124,248,0.4)' }}
+          >
+            <RefreshCw size={13} strokeWidth={2} className={busy ? 'animate-spin' : ''} />
+            Refresh now
+          </button>
+
+          {refresh.status === 'starting' && (
+            <span className="text-xs" style={{ color: '#60A5FA' }}>Starting the run…</span>
+          )}
+          {refresh.status === 'running' && (
+            <span className="text-xs" style={{ color: '#60A5FA' }}>
+              Updating… {fmtElapsed(refresh.elapsed)} · usually under a minute
+            </span>
+          )}
+          {refresh.status === 'done' && (
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: '#34D399' }}>
+              <CheckCircle2 size={13} strokeWidth={2} /> Updated just now
+            </span>
+          )}
+          {refresh.status === 'error' && (
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: '#FBBF24' }}>
+              <AlertTriangle size={13} strokeWidth={2} /> {refresh.errorMsg}
+            </span>
+          )}
+        </div>
+
+        {/* VA daily upload — a successful upload auto-kicks a refresh */}
+        <AmazonExportUpload onUploaded={refresh.trigger} />
 
         {/* Summary tiles */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-5">

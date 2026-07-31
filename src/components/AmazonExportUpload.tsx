@@ -30,7 +30,7 @@ function useLatestExport() {
   })
 }
 
-export default function AmazonExportUpload() {
+export default function AmazonExportUpload({ onUploaded }: { onUploaded?: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
   const { data: latest, isError: listError } = useLatestExport()
@@ -63,8 +63,9 @@ export default function AmazonExportUpload() {
         .upload(`orders_${stamp}.csv`, file, { contentType: 'text/csv' })
       if (error) throw error
 
-      setResult({ ok: true, msg: `Uploaded ${file.name} — the next engine run will pick it up.` })
+      setResult({ ok: true, msg: `Uploaded ${file.name} — refreshing the restock data now.` })
       queryClient.invalidateQueries({ queryKey: ['amazonExports'] })
+      onUploaded?.() // kick an on-demand engine run so the panel catches up now
     } catch (e) {
       const msg = String((e as Error)?.message ?? e)
       setResult({
